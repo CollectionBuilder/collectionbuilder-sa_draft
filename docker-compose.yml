@@ -5,6 +5,7 @@ services:
     build: .
     volumes:
       - .aws:/home/ubuntu/.aws
+      - .elasticsearch:/home/ubuntu/.elasticsearch
       - .:/home/ubuntu/collectionbuilder
     ports:
       - 4000:4000
