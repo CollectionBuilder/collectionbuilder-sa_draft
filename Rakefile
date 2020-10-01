@@ -103,94 +103,6 @@ def prompt_user_for_confirmation message
   end
 end
 
-def load_config env = :DEVELOPMENT
-  # Read the config files and validate and return the values required by rake
-  # tasks.
-
-  # Get the config as defined by the env argument.
-  filenames = $ENV_CONFIG_FILENAMES_MAP[env]
-  config = {}
-  filenames.each do |filename|
-    config.update(YAML.load_file filename)
-  end
-
-  # Read the digital objects location.
-  digital_objects_location = config['digital-objects']
-  if !digital_objects_location
-    raise "digital-objects is not defined in _config*.yml for environment: #{env}"
-  end
-  # Strip any trailing slash.
-  digital_objects_location.delete_suffix! '/'
-
-  # Load the collection metadata.
-  metadata_name = config['metadata']
-  if !metadata_name
-    raise "metadata must be defined in _config.yml"
-  end
-  metadata_filename = File.join(['_data', "#{metadata_name}.csv"])
-  # TODO - document the assumption that the metadata CSV is UTF-8 encoded.
-  metadata_text = File.read(metadata_filename, :encoding => 'utf-8')
-  metadata = CSV.parse(metadata_text, headers: true)
-
-  # Load the search configuration.
-  search_config = CSV.parse(File.read($SEARCH_CONFIG_PATH), headers: true)
-
-  # Generate the collection URL by concatenating 'url' with 'baseurl'.
-  stripped_url = (config['url'] || '').delete_suffix '/'
-  stripped_baseurl = (config['baseurl'] || '').delete_prefix('/').delete_suffix('/')
-  collection_url = "#{stripped_url}/#{stripped_baseurl}".delete_suffix '/'
-
-  retval = {
-    :metadata => metadata,
-    :search_config => search_config,
-    :collection_title => config['title'],
-    :collection_description => config['description'],
-    :collection_url => collection_url,
-    :elasticsearch_protocol => config['elasticsearch-protocol'],
-    :elasticsearch_host => config['elasticsearch-host'],
-    :elasticsearch_port => config['elasticsearch-port'],
-    :elasticsearch_index => config['elasticsearch-index'],
-    :elasticsearch_directory_index => config['elasticsearch-directory-index'],
-  }
-
-  # Add environment-dependent values.
-  if env == :DEVELOPMENT
-    # If present, strip out the baseurl prefix.
-    if config['baseurl'] and digital_objects_location.start_with? config['baseurl']
-      digital_objects_location = digital_objects_location[config['baseurl'].length..-1]
-      # Trim any leading slash from the objects directory
-      digital_objects_location.delete_prefix! '/'
-    end
-    retval.update({
-      :objects_dir => digital_objects_location,
-      :thumb_images_dir => File.join([digital_objects_location, 'thumbs']),
-      :small_images_dir => File.join([digital_objects_location, 'small']),
-      :extracted_pdf_text_dir => File.join([digital_objects_location, 'extracted_text']),
-      :elasticsearch_dir => File.join([digital_objects_location, 'elasticsearch']),
-    })
-  else
-    # Environment is PRODUCTION_PREVIEW or PRODUCTION.
-    retval.update({
-      :remote_objects_url => digital_objects_location,
-      :remote_thumb_images_url => "#{digital_objects_location}/thumbs",
-      :remote_small_images_url => "#{digital_objects_location}/small",
-    })
-  end
-
-  return retval
-end
-
-def get_es_user_credentials user = "admin"
-  # Return the username and password for the specified Elasticsearch user.
-  creds = YAML.load_file $ES_CREDENTIALS_PATH
-  if !creds.include? "users"
-    raise "\"users\" key not found in: #{$ES_CREDENTIALS_PATH}"
-  elsif !creds['users'].include? user
-    raise "No credentials found for user: \"#{user}\""
-  else
-    return creds['users'][user]
-  end
-end
 
 def elasticsearch_ready config
   # Return a boolean indicating whether the Elasticsearch instance is available.
@@ -747,69 +659,6 @@ end
 # Elasticsearch HTTP Request Helpers
 ###############################################################################
 
-$get_config_for_es_user =
-  ->(es_user) { load_config (if es_user != nil then :PRODUCTION_PREVIEW else :DEVELOPMENT end) }
-
-
-def make_es_request config, user, method, path, body=nil, content_type=nil
-  protocol = config[:elasticsearch_protocol]
-  host = config[:elasticsearch_host]
-  port = config[:elasticsearch_port]
-
-  initheader = { 'Accept' => $APPLICATION_JSON }
-  if content_type != nil
-    initheader['Content-Type'] = content_type
-  end
-
-  req_fn =
-    case method
-    when :GET
-      Net::HTTP::Get
-    when :PUT
-      Net::HTTP::Put
-    when :POST
-      Net::HTTP::Post
-    when :DELETE
-      Net::HTTP::Delete    else
-      raise "Unhandled HTTP method: #{method}"
-    end
-
-  req = req_fn.new(path, initheader = initheader)
-
-  # Get the local ES config file location from the development config.
-  dev_config = load_config :DEVELOPMENT
-
-  # If an Elasticsearch user was specified, use their credentials to configure
-  # basic auth.
-  if user != nil
-    creds = get_es_user_credentials user
-    req.basic_auth creds['username'], creds['password']
-  end
-
-  # Set any specified body.
-  if body != nil
-    req.body = body
-  end
-
-  # Make the request.
-  begin
-    res = Net::HTTP.start(host, port, :use_ssl => config[:elasticsearch_protocol] == 'https') do |http|
-    http.request(req)
-    end
-  rescue Errno::ECONNREFUSED
-    puts "Elasticsearch not found at: #{host}:#{port}"
-    if user == nil
-      puts 'By default, the Elasticsearch-related rake tasks attempt to operate on the local, ' +
-           'development ES instance. If you want to operate on a production instance, please ' +
-           'specify the <profile-name> rake task argument.'
-    end
-    exit 1
-  end
-
-  return res
-end
-
-
 def get_es_index_metadata config, user, index
   res = make_es_request(
     config=config,
@@ -864,22 +713,22 @@ end
 # list_es_indices
 ###############################################################################
 
-desc "Show the available Elasticsearch indices"
-task :list_es_indices, [:es_user] do |t, args|
-  config = $get_config_for_es_user.call args.es_user
+# desc "Show the available Elasticsearch indices"
+# task :list_es_indices, [:es_user] do |t, args|
+#   config = $get_config_for_es_user.call args.es_user
 
-  res = make_es_request(
-     config=config,
-     user=args.es_user,
-     method=:GET,
-     path='/_cat/indices'
-  )
-  if res.code != '200'
-      raise res.body
-  end
-  # Pretty-print the JSON response.
-  puts JSON.pretty_generate(JSON.load(res.body))
-end
+#   res = make_es_request(
+#      config=config,
+#      user=args.es_user,
+#      method=:GET,
+#      path='/_cat/indices'
+#   )
+#   if res.code != '200'
+#       raise res.body
+#   end
+#   # Pretty-print the JSON response.
+#   puts JSON.pretty_generate(JSON.load(res.body))
+# end
 
 
 ###############################################################################
