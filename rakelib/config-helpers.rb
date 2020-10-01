@@ -82,5 +82,5 @@ def load_config env = :DEVELOPMENT
 end
 
 
-$get_config_for_es_user =
-  ->(es_user) { load_config (if es_user != nil then :PRODUCTION_PREVIEW else :DEVELOPMENT end) }
+$get_config_for_es_profile =
+  ->(profile) { load_config (if profile != nil then :PRODUCTION_PREVIEW else :DEVELOPMENT end) }

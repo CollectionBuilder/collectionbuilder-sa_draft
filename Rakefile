@@ -81,28 +81,6 @@ def assert_required_args args, req_args
   end
 end
 
-def prompt_user_for_confirmation message
-  response = nil
-  while true do
-    # Use print instead of puts to avoid trailing \n.
-    print "#{message} (Y/n): "
-    $stdout.flush
-    response =
-      case STDIN.gets.chomp.downcase
-      when "", "y"
-        true
-      when "n"
-        false
-      else
-        nil
-      end
-    if response != nil
-      return response
-    end
-    puts "Please enter \"y\" or \"n\""
-  end
-end
-
 
 def elasticsearch_ready config
   # Return a boolean indicating whether the Elasticsearch instance is available.
@@ -673,99 +651,6 @@ def get_es_index_metadata config, user, index
   return data[index]['mappings']['_meta']
 end
 
-
-###############################################################################
-# create_es_index
-###############################################################################
-
-desc "Create the Elasticsearch index"
-task :create_es_index, [:es_user] do |t, args|
-  args.with_defaults(
-    :es_user => nil,
-  )
-
-  config = $get_config_for_es_user.call args.es_user
-  dev_config = load_config :DEVELOPMENT
-
-  res = make_es_request(
-    config=config,
-    user=args.es_user,
-    method=:PUT,
-    path="/#{config[:elasticsearch_index]}",
-    body=File.open(File.join([dev_config[:elasticsearch_dir], $ES_INDEX_SETTINGS_FILENAME]), 'rb').read,
-    content_type=$APPLICATION_JSON
-  )
-
-  if res.code == '200'
-    puts "Created Elasticsearch index: #{config[:elasticsearch_index]}"
-  else
-    data = JSON.load(res.body)
-    if data['error']['type'] == 'resource_already_exists_exception'
-      puts "Elasticsearch index (#{config[:elasticsearch_index]}) already exists"
-    else
-      raise res.body
-    end
-  end
-end
-
-
-###############################################################################
-# list_es_indices
-###############################################################################
-
-# desc "Show the available Elasticsearch indices"
-# task :list_es_indices, [:es_user] do |t, args|
-#   config = $get_config_for_es_user.call args.es_user
-
-#   res = make_es_request(
-#      config=config,
-#      user=args.es_user,
-#      method=:GET,
-#      path='/_cat/indices'
-#   )
-#   if res.code != '200'
-#       raise res.body
-#   end
-#   # Pretty-print the JSON response.
-#   puts JSON.pretty_generate(JSON.load(res.body))
-# end
-
-
-###############################################################################
-# delete_es_index
-###############################################################################
-
-desc "Delete the Elasticsearch index"
-task :delete_es_index, [:es_user] do |t, args|
-  args.with_defaults(
-    :es_user => nil,
-  )
-
-  config = $get_config_for_es_user.call args.es_user
-
-  res = prompt_user_for_confirmation "Really delete index \"#{config[:elasticsearch_index]}\"?"
-  if res == false
-    next
-  end
-
-  res = make_es_request(
-    config=config,
-    user=args.es_user,
-    method=:DELETE,
-    path="/#{config[:elasticsearch_index]}"
-  )
-
-  if res.code == '200'
-    puts "Deleted Elasticsearch index: #{config[:elasticsearch_index]}"
-  else
-    data = JSON.load(res.body)
-    if data['error']['type'] == 'index_not_found_exception'
-      puts "Delete failed. Elasticsearch index (#{config[:elasticsearch_index]}) does not exist."
-    else
-      raise res.body
-    end
-  end
-end
 
 
 ###############################################################################

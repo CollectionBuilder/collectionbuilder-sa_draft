@@ -1,6 +1,7 @@
 
 require 'yaml'
 
+require_relative 'config-helpers'
 require_relative 'constants'
 
 
@@ -19,7 +20,7 @@ end
 
 # Return the Elasticsearch protocol, host, port, user for a specific profile.
 def get_es_profile_request_args profile
-  config = $get_config_for_es_user.call profile
+  config = $get_config_for_es_profile.call profile
   creds = if profile != nil then get_es_profile_credentials(profile) else nil end
   return config[:elasticsearch_protocol],
          config[:elasticsearch_host],
@@ -28,13 +29,16 @@ def get_es_profile_request_args profile
 end
 
 
-def make_es_request profile, method, path, body=nil, content_type=nil, raise_for_status=true
+def make_request profile, method, path, body=nil, headers=nil, raise_for_status: true
   # Get the user-profile-specific request args.
   protocol, host, port, creds = get_es_profile_request_args profile
 
+  # Set initheader to always accept/expect JSON responses.
   initheader = { 'Accept' => $APPLICATION_JSON }
-  if content_type != nil
-    initheader['Content-Type'] = content_type
+
+  # Update initheader with any custom, specified headers.
+  if headers != nil
+    initheader.update(headers)
   end
 
   req_fn =
@@ -50,7 +54,7 @@ def make_es_request profile, method, path, body=nil, content_type=nil, raise_for
       raise "Unhandled HTTP method: #{method}"
     end
 
-  req = req_fn.new(path, initheader = initheader)
+  req = req_fn.new(path, initheader=initheader)
 
   # If an Elasticsearch user was specified, use their credentials to configure
   # basic auth.
@@ -87,11 +91,48 @@ def make_es_request profile, method, path, body=nil, content_type=nil, raise_for
 end
 
 
+# Define a make_request() wrapper that takes care of setting the Content-Type and encoding
+# the body of a JSON request.
+def make_json_request profile, method, path, data, **kwargs
+  return make_request(
+    profile,
+    method,
+    path,
+    body=JSON.dump(data),
+    headers={ 'content-type' => $APPLICATION_JSON },
+    **kwargs
+  )
+end
+
+
 ###############################################################################
 # Elasticsearch API Endpoints
 ###############################################################################
 
-def cat_indices profile
-  # https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-indices.html
-  return make_es_request(profile, method=:GET, path='/_cat/indices')
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-indices.html
+def cat_indices profile, **kwargs
+  return make_request profile, method=:GET, path='/_cat/indices', **kwargs
+end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
+def create_index profile, index, settings, **kwargs
+  return make_json_request(
+    profile,
+    method=:PUT,
+    path="/#{index}",
+    data=settings,
+    **kwargs
+  )
+end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-index.html
+def delete_index profile, index, **kwargs
+  return make_request(
+    profile,
+    method=:DELETE,
+    path="/#{index}",
+    **kwargs
+  )
 end
