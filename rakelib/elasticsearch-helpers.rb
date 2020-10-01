@@ -5,6 +5,10 @@ require_relative 'config-helpers'
 require_relative 'constants'
 
 
+###############################################################################
+# Elasticsearch Config Helpers
+###############################################################################
+
 # Return the credentials for the specified Elasticsearch profile.
 def get_es_profile_credentials profile = "admin"
   creds = YAML.load_file $ES_CREDENTIALS_PATH
@@ -18,7 +22,8 @@ def get_es_profile_credentials profile = "admin"
 end
 
 
-# Return the Elasticsearch protocol, host, port, user for a specific profile.
+# Return the Elasticsearch protocol, host, port, and credentials for a given
+# profile.
 def get_es_profile_request_args profile
   config = $get_config_for_es_profile.call profile
   creds = if profile != nil then get_es_profile_credentials(profile) else nil end
@@ -29,7 +34,12 @@ def get_es_profile_request_args profile
 end
 
 
-def make_request profile, method, path, body=nil, headers=nil, raise_for_status: true
+###############################################################################
+# Elasticsearch HTTP Request Helpers
+###############################################################################
+
+def make_request profile, method, path, body: nil, headers: nil,
+                 raise_for_status: true
   # Get the user-profile-specific request args.
   protocol, host, port, creds = get_es_profile_request_args profile
 
@@ -91,48 +101,61 @@ def make_request profile, method, path, body=nil, headers=nil, raise_for_status:
 end
 
 
-# Define a make_request() wrapper that takes care of setting the Content-Type and encoding
-# the body of a JSON request.
+# Define a make_request() wrapper that takes care of setting the Content-Type
+# and encoding the body of a JSON request.
 def make_json_request profile, method, path, data, **kwargs
   return make_request(
     profile,
     method,
     path,
-    body=JSON.dump(data),
-    headers={ 'content-type' => $APPLICATION_JSON },
+    body: JSON.dump(data),
+    headers: { 'content-type' => $APPLICATION_JSON },
     **kwargs
   )
 end
 
 
 ###############################################################################
-# Elasticsearch API Endpoints
+# Misc Helpers
+###############################################################################
+
+# Get the index mapping _meta value.
+def get_index_metadata profile, index
+  res = make_request profile, :GET, "/#{index}/_mapping"
+  data = JSON.load res.body
+  return data[index]['mappings']['_meta']
+end
+
+
+###############################################################################
+# Elasticsearch API Endpoint Wrappers
 ###############################################################################
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-indices.html
 def cat_indices profile, **kwargs
-  return make_request profile, method=:GET, path='/_cat/indices', **kwargs
+  return make_request profile, :GET, '/_cat/indices', **kwargs
 end
 
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
 def create_index profile, index, settings, **kwargs
-  return make_json_request(
-    profile,
-    method=:PUT,
-    path="/#{index}",
-    data=settings,
-    **kwargs
-  )
+  return make_json_request profile, :PUT, "/#{index}", settings, **kwargs
 end
 
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-index.html
 def delete_index profile, index, **kwargs
-  return make_request(
-    profile,
-    method=:DELETE,
-    path="/#{index}",
-    **kwargs
-  )
+  return make_request profile, :DELETE, "/#{index}", **kwargs
+end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update.html
+def update_document profile, index, doc_id, doc, **kwargs
+  return make_json_request profile, :POST, "/#{index}/_doc/#{doc_id}", doc, **kwargs
+end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete.html
+def delete_document profile, index, doc_id, **kwargs
+  return make_request profile, :DELETE, "/#{index}/_doc/#{doc_id}", **kwargs
 end
