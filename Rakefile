@@ -669,33 +669,6 @@ end
 
 
 ###############################################################################
-# list_es_snapshots
-###############################################################################
-
-desc "List available Elasticsearch snapshots"
-task :list_es_snapshots, [:es_user, :repository_name] do |t, args|
-  args.with_defaults(
-    :repository_name => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
-  )
-
-  config = $get_config_for_es_user.call args.es_user
-
-  res = make_es_request(
-     config=config,
-     user=args.es_user,
-     method=:GET,
-     path="/_snapshot/#{args.repository_name}/*"
-  )
-  data = JSON.load res.body
-  if res.code != '200'
-      raise "#{data}"
-  end
-  # Pretty-print the JSON response.
-  puts JSON.pretty_generate(JSON.load(res.body))
-end
-
-
-###############################################################################
 # restore_es_snapshot
 ###############################################################################
 

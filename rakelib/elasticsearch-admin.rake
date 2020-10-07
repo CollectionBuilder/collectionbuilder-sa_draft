@@ -90,8 +90,14 @@ namespace :es do
 
   desc "Pretty-print the list of existing indices to the console"
   task :list_indices, [:profile] do |t, args|
+    # Make the API request, letting it fail if the response status != 200.
     res = cat_indices args.profile
-    puts JSON.pretty_generate(JSON.load(res.body))
+
+    # Decode the response data.
+    data = JSON.load(res.body)
+
+    # Prett-print the response data.
+    puts JSON.pretty_generate(data)
   end
 
 
@@ -101,18 +107,17 @@ namespace :es do
 
   desc "Create the Elasticsearch index"
   task :create_index, [:profile] do |t, args|
-
+    # Read the index name from the config.
     config = $get_config_for_es_profile.call args.profile
-    dev_config = load_config :DEVELOPMENT
-
     index = config[:elasticsearch_index]
 
+    # Load the index settings from the local generated index settings file.
+    dev_config = load_config :DEVELOPMENT
     settings_file_path = File.join([dev_config[:elasticsearch_dir], $ES_INDEX_SETTINGS_FILENAME])
     settings = JSON.load(File.open(settings_file_path, 'rb'))
 
     # Call the _create_index helper.
     _create_index args.profile, index, settings
-
   end
 
 
@@ -122,13 +127,12 @@ namespace :es do
 
   desc "Delete the Elasticsearch index"
   task :delete_index, [:profile] do |t, args|
-
+    # Read the index name from the config.
     config = $get_config_for_es_profile.call args.profile
     index = config[:elasticsearch_index]
 
     # Call the _delete_index helper.
     _delete_index args.profile, index
-
   end
 
 
@@ -138,14 +142,15 @@ namespace :es do
 
   desc "Create the Elasticsearch directory index"
   task :create_directory_index, [:profile] do |t, args|
-
+    # Read the directory index name from the config.
     config = $get_config_for_es_profile.call args.profile
     index = config[:elasticsearch_directory_index]
+
+    # Read the directory index settings from a global constant.
     settings = $ES_DIRECTORY_INDEX_SETTINGS
 
     # Call the _create_index helper.
     _create_index args.profile, index, settings
-
   end
 
 
@@ -215,13 +220,12 @@ namespace :es do
 
   desc "Delete the Elasticsearch directory index"
   task :delete_directory_index, [:profile] do |t, args|
-
+    # Read the directory index name from the config.
     config = $get_config_for_es_profile.call args.profile
     index = config[:elasticsearch_directory_index]
 
     # Call the _delete_index helper.
     _delete_index args.profile, index
-
   end
 
 
@@ -257,12 +261,17 @@ namespace :es do
       assert_required_args args, [ :bucket ]
     end
 
+    # Make the API request.
     res = create_snapshot_repository args.profile, args.repository_name, 's3',
                                      { :bucket => bucket, :base_path => args.base_path },
                                      raise_for_status: false
+
+    # Abort on unexpected error.
     if res.code != '200'
-      _abort 'Snapshot repository creation', JSON.load(res.body)
+      data = JSON.load(res.body)
+      _abort 'Snapshot repository creation', data
     end
+
     puts "Elasticsearch S3 snapshot repository (#{args.repository_name}) created"
   end
 
@@ -273,18 +282,48 @@ namespace :es do
 
   desc "List the existing Elasticsearch snapshot repositories"
   task :list_snapshot_repositories, [:profile] do |t, args|
-
+    # Make the API request.
     res = get_snapshot_repositories args.profile, raise_for_status: false
 
+    # Decode the response data.
     data = JSON.load(res.body)
 
+    # Abort on unexpected error.
     if res.code != '200'
-      _abort "Get snapshot repositories", data
+      _abort 'Get snapshot repositories', data
     end
 
+    # Print the response data.
     puts JSON.pretty_generate(data)
   end
 
 
-  # Close the namespace.
+  ###############################################################################
+  # list_es_snapshots
+  ###############################################################################
+
+  desc "List available Elasticsearch snapshots"
+  task :list_snapshots, [:profile, :repository_name] do |t, args|
+    args.with_defaults(
+      :repository_name => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
+    )
+
+    # Make the API request.
+    res = get_repository_snapshots args.profile, args.repository_name,
+                                   raise_for_status: false
+
+    # Decode the response data.
+    data = JSON.load res.body
+
+    # Abort un unexpected error.
+    if res.code != '200'
+      _abort 'List snapshots', data
+    end
+
+    # Pretty-print the response data.
+    puts JSON.pretty_generate(data)
+  end
+
+
+# Close the namespace.
 end

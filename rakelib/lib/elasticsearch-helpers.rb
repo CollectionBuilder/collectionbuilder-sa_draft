@@ -172,3 +172,9 @@ end
 def get_snapshot_repositories profile, **kwargs
   return make_request profile, :GET, "/_snapshot", **kwargs
 end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/7.9/get-snapshot-api.html
+def get_repository_snapshots profile, repository, **kwargs
+  return make_request profile, :GET, "/_snapshot/#{repository}/*", **kwargs
+end
