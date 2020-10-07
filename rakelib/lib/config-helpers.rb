@@ -84,3 +84,21 @@ end
 
 $get_config_for_es_profile =
   ->(profile) { load_config (if profile != nil then :PRODUCTION_PREVIEW else :DEVELOPMENT end) }
+
+
+# Parse a Digital Ocean Space URL into its constituent S3 components, with the expectation
+# that it has the format:
+# <protocol>://<bucket-name>.<region>.cdn.digitaloceanspaces.com[/<prefix>]
+# where the endpoint will be: <region>.digitaloceanspaces.com
+def parse_digitalocean_space_url url
+  match = $S3_URL_REGEX.match url
+  if !match
+    raise "digital-objects URL \"#{url}\" does not match the expected "\
+          "pattern: \"#{$S3_URL_REGEX}\""
+  end
+  bucket = match[:bucket]
+  region = match[:region]
+  prefix = match[:prefix]
+  endpoint = "https://#{region}.digitaloceanspaces.com"
+  return bucket, region, prefix, endpoint
+end

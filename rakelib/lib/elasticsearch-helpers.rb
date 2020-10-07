@@ -159,3 +159,10 @@ end
 def delete_document profile, index, doc_id, **kwargs
   return make_request profile, :DELETE, "/#{index}/_doc/#{doc_id}", **kwargs
 end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/put-snapshot-repo-api.html
+def create_snapshot_repository profile, name, type, settings, **kwargs
+  return make_json_request profile, :PUT, "/_snapshot/#{name}",
+                           { :type => type, :settings => settings }, **kwargs
+end

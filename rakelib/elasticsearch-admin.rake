@@ -7,6 +7,13 @@ require_relative 'lib/elasticsearch-helpers'
 require 'json'
 
 
+# Define an Elasticsearch error response abort helper.
+def _abort what_failed, data
+  abort "[ERROR] #{what_failed} failed - " \
+        "Elasticsearch responded with:\n#{JSON.pretty_generate(data)}"
+end
+
+
 # Define a create_index helper for use by both the create_index and
 # create_directory_index tasks that returns a bool indicating whether the
 # index was created.
@@ -32,9 +39,8 @@ def _create_index profile, index, settings
     return false
   end
 
-  # An unexpected error occurred. Abort with an error response message.
-  abort "[ERROR] Index creation failed - " \
-        "Elasticsearch responded with:\n#{JSON.pretty_generate(data)}"
+  # Abort on unexpected error.
+  _abort 'Index creation', data
 end
 
 
@@ -68,9 +74,8 @@ def _delete_index profile, index
     return false
   end
 
-  # An unexpected error occurred. Abort with an error response message.
-  abort "[ERROR] Index deletion failed - " \
-        "Elasticsearch responded with:\n#{JSON.pretty_generate(data)}"
+  # Abort on unexpected error.
+  _abort 'Index deletion', data
 end
 
 
@@ -217,6 +222,48 @@ namespace :es do
     # Call the _delete_index helper.
     _delete_index args.profile, index
 
+  end
+
+
+  ###############################################################################
+  # create_snapshot_s3_repository
+  ###############################################################################
+
+  desc "Create an Elasticsearch snapshot repository that uses S3-compatible storage"
+  task :create_snapshot_s3_repository,
+       [:profile, :bucket, :base_path, :repository_name] do |t, args|
+
+    args.with_defaults(
+      :base_path => $ES_DEFAULT_SNAPSHOT_REPOSITORY_BASE_PATH,
+      :repository_name => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
+    )
+
+    bucket = args.bucket
+    # If bucket was not specified, attempt to parse a default value from the config
+    # remote_objects_url.
+    if bucket == nil
+      config = $get_config_for_es_profile.call args.profile
+      if config.has_key? :remote_objects_url
+        begin
+          bucket, = parse_digitalocean_space_url config[:remote_objects_url]
+        rescue
+        end
+      end
+    end
+
+    if bucket == nil
+      # Bucket was not specified and we could not parse a default value from the
+      # config remote_objects_url.
+      assert_required_args args, [ :bucket ]
+    end
+
+    res = create_snapshot_repository args.profile, args.repository_name, 's3',
+                                     { :bucket => bucket, :base_path => args.base_path },
+                                     raise_for_status: false
+    if res.code != '200'
+      _abort 'Snapshot repository creation', JSON.load(res.body)
+    end
+    puts "Elasticsearch S3 snapshot repository (#{args.repository_name}) created"
   end
 
 
