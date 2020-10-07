@@ -178,3 +178,10 @@ end
 def get_repository_snapshots profile, repository, **kwargs
   return make_request profile, :GET, "/_snapshot/#{repository}/*", **kwargs
 end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/7.9/restore-snapshot-api.html
+def restore_snapshot profile, repository, snapshot, wait: true, **kwargs
+  path = "/_snapshot/#{repository}/#{snapshot}/_restore?wait_for_completion=#{wait}"
+  return make_request profile, :POST, path, **kwargs
+end

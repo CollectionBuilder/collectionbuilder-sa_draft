@@ -669,41 +669,6 @@ end
 
 
 ###############################################################################
-# restore_es_snapshot
-###############################################################################
-
-desc "Restore an Elasticsearch snapshot"
-task :restore_es_snapshot, [:es_user, :snapshot_name, :wait, :repository_name] do |t, args|
-  assert_required_args(args, [ :snapshot_name ])
-  args.with_defaults(
-    :repository_name => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
-    :wait => 'true'
-  )
-  wait = args.wait == 'true'
-
-  config = $get_config_for_es_user.call args.es_user
-
-  repository_snapshot_path = "#{args.repository_name}/#{args.snapshot_name}"
-
-  res = make_es_request(
-     config=config,
-     user=args.es_user,
-     method=:POST,
-     path="/_snapshot/#{repository_snapshot_path}/_restore" +
-          "?wait_for_completion=#{args.wait}"
-  )
-  if res.code != '200'
-    raise res.body
-  elsif wait
-    puts "Snapshot (#{repository_snapshot_path}) restored"
-  else
-    # Pretty-print the JSON response.
-    puts JSON.pretty_generate(JSON.load(res.body))
-  end
-end
-
-
-###############################################################################
 # delete_es_snapshot
 ###############################################################################
 

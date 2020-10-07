@@ -277,7 +277,7 @@ namespace :es do
 
 
   ###############################################################################
-  # list_es_snapshot_repositories
+  # list_snapshot_repositories
   ###############################################################################
 
   desc "List the existing Elasticsearch snapshot repositories"
@@ -299,7 +299,7 @@ namespace :es do
 
 
   ###############################################################################
-  # list_es_snapshots
+  # list_snapshots
   ###############################################################################
 
   desc "List available Elasticsearch snapshots"
@@ -322,6 +322,37 @@ namespace :es do
 
     # Pretty-print the response data.
     puts JSON.pretty_generate(data)
+  end
+
+
+  ###############################################################################
+  # restore_snapshot
+  ###############################################################################
+
+  desc "Restore an Elasticsearch snapshot"
+  task :restore_snapshot, [:profile, :snapshot_name, :wait, :repository_name] do |t, args|
+    assert_required_args(args, [ :snapshot_name ])
+    args.with_defaults(
+      :repository_name => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
+      :wait => 'true'
+    )
+    wait = args.wait == 'true'
+
+    # Make the API request.
+    res = restore_snapshot args.profile, args.repository_name, args.snapshot_name, wait: wait,
+                           raise_for_status: false
+
+    # Decode the response data.
+    data = JSON.load(res.body)
+
+    if res.code != '200'
+      _abort 'Restore snapshot', data
+    elsif wait
+      puts "Snapshot (/#{args.repository_name}/#{args.snapshot_name}) restored"
+    else
+      # Pretty-print the JSON response.
+      puts JSON.pretty_generate(data)
+    end
   end
 
 
