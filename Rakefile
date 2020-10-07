@@ -12,8 +12,6 @@ require 'aws-sdk-s3'
 # Constants
 ###############################################################################
 
-$APPLICATION_JSON = 'application/json'
-
 $S3_URL_REGEX = /^https?:\/\/(?<bucket>[^\.]+)\.(?<region>\w+)(?:\.cdn)?\.digitaloceanspaces\.com(?:\/(?<prefix>.+))?$/
 
 $ES_CREDENTIALS_PATH = File.join [Dir.home, ".elasticsearch", "credentials"]
@@ -41,25 +39,6 @@ $ES_DEFAULT_SNAPSHOT_POLICY_NAME = 'default'
 # Helper Functions
 ###############################################################################
 
-$ensure_dir_exists = ->(dir) { if !Dir.exists?(dir) then Dir.mkdir(dir) end }
-
-def assert_env_arg_is_valid env, valid_envs=["DEVELOPMENT", "PRODUCTION_PREVIEW", "PRODUCTION"]
-  if !valid_envs.include? env
-    puts "Invalid environment value: \"#{env}\". Please specify one of: #{valid_envs}"
-    exit 1
-  end
-end
-
-def assert_required_args args, req_args
-  # Assert that the task args object includes a non-nil value for each arg in req_args.
-  missing_args = req_args.filter { |x| !args.has_key?(x) or args.fetch(x) == nil }
-  if missing_args.length > 0
-    puts "The following required task arguments must be specified: #{missing_args}"
-    exit 1
-  end
-end
-
-
 def elasticsearch_ready config
   # Return a boolean indicating whether the Elasticsearch instance is available.
   req = Net::HTTP.new(config[:elasticsearch_host], config[:elasticsearch_port])
@@ -76,23 +55,6 @@ def elasticsearch_ready config
 end
 
 
-def parse_digitalocean_space_url url
-  # Parse a Digital Ocean Space URL into its constituent S3 components, with the expectation
-  # that it has the format:
-  # <protocol>://<bucket-name>.<region>.cdn.digitaloceanspaces.com[/<prefix>]
-  # where the endpoint will be: <region>.digitaloceanspaces.com
-  match = $S3_URL_REGEX.match url
-  if !match
-    puts "digital-objects URL \"#{url}\" does not match the expected "\
-         "pattern: \"#{$S3_URL_REGEX}\""
-    exit 1
-  end
-  bucket = match[:bucket]
-  region = match[:region]
-  prefix = match[:prefix]
-  endpoint = "https://#{region}.digitaloceanspaces.com"
-  return bucket, region, prefix, endpoint
-end
 
 
 ###############################################################################
@@ -640,43 +602,6 @@ task :load_es_bulk_data, [:es_user] do |t, args|
 end
 
 
-
-###############################################################################
-# create_es_snapshot_s3_repository
-###############################################################################
-
-desc "Create an Elasticsearch snapshot repository that uses S3-compatible storage"
-task :create_es_snapshot_s3_repository,
-     [:es_user, :bucket, :base_path, :repository_name] do |t, args|
-  assert_required_args(args, [:bucket])
-  args.with_defaults(
-    :base_path => $ES_DEFAULT_SNAPSHOT_REPOSITORY_BASE_PATH,
-    :repository_name => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
-  )
-
-  config = $get_config_for_es_user.call args.es_user
-
-  res = make_es_request(
-     config=config,
-     user=args.es_user,
-     method=:PUT,
-     path="/_snapshot/#{args.repository_name}",
-     body=JSON.dump({
-       :type => 's3',
-       :settings => {
-         :bucket => args.bucket,
-         :base_path => args.base_path
-       }
-                    }),
-    content_type=$APPLICATION_JSON
-  )
-  if res.code != '200'
-      raise res.body
-  end
-  puts "Elasticsearch S3 snapshot repository (#{args.repository_name}) created"
-end
-
-
 ###############################################################################
 # delete_es_snapshot_repository
 ###############################################################################
@@ -706,28 +631,6 @@ task :delete_es_snapshot_repository, [:es_user, :repository_name] do |t, args|
       raise res.body
     end
   end
-end
-
-
-###############################################################################
-# list_es_snapshot_repositories
-###############################################################################
-
-desc "List the existing Elasticsearch snapshot repositories"
-task :list_es_snapshot_repositories, [:es_user] do |t, args|
-  config = $get_config_for_es_user.call args.es_user
-
-  res = make_es_request(
-     config=config,
-     user=args.es_user,
-     method=:GET,
-     path='/_snapshot',
-  )
-  if res.code != '200'
-      raise res.body
-  end
-  # Pretty-print the JSON response.
-  puts JSON.pretty_generate(JSON.load(res.body))
 end
 
 
