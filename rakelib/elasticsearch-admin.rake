@@ -267,5 +267,24 @@ namespace :es do
   end
 
 
+  ###############################################################################
+  # list_es_snapshot_repositories
+  ###############################################################################
+
+  desc "List the existing Elasticsearch snapshot repositories"
+  task :list_snapshot_repositories, [:profile] do |t, args|
+
+    res = get_snapshot_repositories args.profile, raise_for_status: false
+
+    data = JSON.load(res.body)
+
+    if res.code != '200'
+      _abort "Get snapshot repositories", data
+    end
+
+    puts JSON.pretty_generate(data)
+  end
+
+
   # Close the namespace.
 end

@@ -166,3 +166,9 @@ def create_snapshot_repository profile, name, type, settings, **kwargs
   return make_json_request profile, :PUT, "/_snapshot/#{name}",
                            { :type => type, :settings => settings }, **kwargs
 end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/7.9/get-snapshot-repo-api.html
+def get_snapshot_repositories profile, **kwargs
+  return make_request profile, :GET, "/_snapshot", **kwargs
+end
