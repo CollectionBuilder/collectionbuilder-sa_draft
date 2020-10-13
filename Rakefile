@@ -572,39 +572,6 @@ task :generate_es_index_settings do
 end
 
 
-
-###############################################################################
-# delete_es_snapshot_repository
-###############################################################################
-
-desc "Delete an Elasticsearch snapshot repository"
-task :delete_es_snapshot_repository, [:es_user, :repository_name] do |t, args|
-  assert_required_args(args, [:repository_name])
-
-  config = $get_config_for_es_user.call args.es_user
-
-  repository_name = args.repository_name
-
-  res = make_es_request(
-     config=config,
-     user=args.es_user,
-     method=:DELETE,
-     path="/_snapshot/#{repository_name}"
-  )
-
-  if res.code == '200'
-    puts "Deleted Elasticsearch snapshot repository: \"#{repository_name}\""
-  else
-    data = JSON.load(res.body)
-    if data['error']['type'] == 'repository_missing_exception'
-      puts "No Elasticsearch snapshot repository found for name: \"#{repository_name}\""
-    else
-      raise res.body
-    end
-  end
-end
-
-
 ###############################################################################
 # create_es_snapshot
 ###############################################################################

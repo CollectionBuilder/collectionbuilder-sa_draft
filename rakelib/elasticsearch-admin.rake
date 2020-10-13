@@ -407,7 +407,31 @@ namespace :es do
     if num_other_ops > 0
       puts "Datafile (#{datafile_path}) also included #{num_other_ops} non-index operations"
     end
+  end
 
+
+  ###############################################################################
+  # delete_snapshot_repository
+  ###############################################################################
+
+  desc "Delete an Elasticsearch snapshot repository"
+  task :delete_snapshot_repository, [:profile, :repository] do |t, args|
+    assert_required_args(args, [:repository])
+    repository = args.repository
+
+    # Make the request.
+    res = delete_snapshot_repository args.profile, repository, raise_for_status: false
+
+    if res.code == '200'
+      puts "Deleted Elasticsearch snapshot repository: \"#{repository}\""
+    else
+      data = JSON.load(res.body)
+      if data['error']['type'] == 'repository_missing_exception'
+        puts "No Elasticsearch snapshot repository found for name: \"#{repository}\""
+      else
+        _abort 'Delete snapshot repository', data
+      end
+    end
   end
 
 

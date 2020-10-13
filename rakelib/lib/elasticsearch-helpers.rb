@@ -174,6 +174,12 @@ def get_snapshot_repositories profile, **kwargs
 end
 
 
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/delete-snapshot-repo-api.html
+def delete_snapshot_repository profile, repository, **kwargs
+  return make_request profile, :DELETE, "/_snapshot/#{repository}", **kwargs
+end
+
+
 # https://www.elastic.co/guide/en/elasticsearch/reference/7.9/get-snapshot-api.html
 def get_repository_snapshots profile, repository, **kwargs
   return make_request profile, :GET, "/_snapshot/#{repository}/*", **kwargs
