@@ -26,20 +26,49 @@ After the `bundler` gem is installed, run the following command to install the r
 bundle install
 ```
 
-#### Rake Task Dependencies
+#### Rake Task Summary
 
-The rake tasks that we'll be using have the following dependencies:
+All defined rake tasks, as reported by `rake --tasks`:
+
+```
+rake cb:build[profile]                                                              # Execute all build steps required to go from metadata file and directory of collection objects to a fully configure...
+rake cb:deploy                                                                      # Build site with production env
+rake cb:enable_daily_search_index_snapshots[profile]                                # Enable daily Elasticsearch snapshots to be written to the "" directory of your Digital Ocean Space
+rake cb:extract_pdf_text                                                            # Extract the text from PDF collection objects
+rake cb:generate_derivatives[thumbs_size,small_size,density,missing,im_executable]  # Generate derivative image files from collection objects
+rake cb:generate_search_index_data[env]                                             # Generate the file that we'll use to populate the Elasticsearch index via the Bulk API
+rake cb:generate_search_index_settings                                              # Generate the settings file that we'll use to create the Elasticsearch index
+rake cb:normalize_object_filenames[force]                                           # Rename the object files to match their corresponding objectid metadata value
+rake cb:serve[env]                                                                  # Run the local web server
+rake es:create_directory_index[profile]                                             # Create the Elasticsearch directory index
+rake es:create_index[profile]                                                       # Create the Elasticsearch index
+rake es:create_snapshot[profile,repository,wait]                                    # Create a new Elasticsearch snapshot
+rake es:create_snapshot_policy[profile,policy,repository,schedule]                  # Create a policy to enable automatic Elasticsearch snapshots
+rake es:create_snapshot_s3_repository[profile,bucket,base_path,repository_name]     # Create an Elasticsearch snapshot repository that uses S3-compatible storage
+rake es:delete_directory_index[profile]                                             # Delete the Elasticsearch directory index
+rake es:delete_index[profile]                                                       # Delete the Elasticsearch index
+rake es:delete_snapshot[profile,snapshot,repository]                                # Delete an Elasticsearch snapshot
+rake es:delete_snapshot_policy[profile,policy]                                      # Delete an Elasticsearch snapshot policy
+rake es:delete_snapshot_repository[profile,repository]                              # Delete an Elasticsearch snapshot repository
+rake es:execute_snapshot_policy[profile,policy]                                     # Manually execute an existing Elasticsearch snapshot policy
+rake es:list_indices[profile]                                                       # Pretty-print the list of existing indices to the console
+rake es:list_snapshot_policies[profile]                                             # List the currently-defined Elasticsearch snapshot policies
+rake es:list_snapshot_repositories[profile]                                         # List the existing Elasticsearch snapshot repositories
+rake es:list_snapshots[profile,repository_name]                                     # List available Elasticsearch snapshots
+rake es:load_bulk_data[profile,datafile_path]                                       # Load index data using the Bulk API
+rake es:ready[profile]                                                              # Display whether the Elasticsearch instance is up and running
+rake es:restore_snapshot[profile,snapshot_name,wait,repository_name]                # Restore an Elasticsearch snapshot
+rake es:update_directory_index[profile,raise_on_missing]                            # Update the Elasticsearch directory index to reflect the current indices
+```
+
+Some tasks have external dependencies as indicated below:
 
 | task name | software dependencies | service dependencies |
 | --- | --- | --- |
 | cb:generate_derivatives | ImageMagick 7 (or compatible), Ghostscript 9.52 (or compatible) | |
-| cb:generate_es_index_settings | | |
 | cb:extract_pdf_text | xpdf | |
-| cb:generate_es_bulk_data | |
 | cb:sync_objects | | Digital Ocean Space |
-| es:create_index | | Elasticsearch |
-| es:delete_index | | Elasticsearch |
-| es:load_bulk_data | | Elasticsearch |
+| es:* | | Elasticsearch |
 
 
 #### Install the Required Software Dependencies
@@ -255,30 +284,30 @@ rake cb:extract_pdf_text
 ```
 
 #### 5.2 Generate the Search Index Data File
-Use the `cb:generate_es_bulk_data` rake task to generate a file, using the collection metadata and extracted PDF text, that can be used to populate the Elasticsearch index.
+Use the `cb:generate_search_index_data` rake task to generate a file, using the collection metadata and extracted PDF text, that can be used to populate the Elasticsearch index.
 
 Local development usage:
 ```
-rake cb:generate_es_bulk_data
+rake cb:generate_search_index_data
 ```
 
 To target your production Elasticsearch instance, you must specify a user profile name argument:
 ```
-rake cb:generate_es_bulk_data[<profile-name>]
+rake cb:generate_search_index_data[<profile-name>]
 ```
 
 For example, to specify the user profile name "PRODUCTION":
 ```
-rake cb:generate_es_bulk_data[PRODUCTION]
+rake cb:generate_search_index_data[PRODUCTION]
 ```
 
 
 #### 5.3 Generate the Search Index Settings File
-Use the `cb:generate_es_index_settings` rake task to create an Elasticsearch index settings file from the configuration in `config-search.csv`.
+Use the `cb:generate_search_index_settings` rake task to create an Elasticsearch index settings file from the configuration in `config-search.csv`.
 
 Usage:
 ```
-rake cb:generate_es_index_settings
+rake cb:generate_search_index_settings
 ```
 
 #### 5.4 Create the Search Index
@@ -470,7 +499,7 @@ Though there are several options for where/how to store your snapshots, we'll de
 
 1. Choose or create a Digital Ocean Space
 
-    The easiest thing is use the same DO Space that you're already using to store your collection objects to also store your Elasticsearch snapshots. In fact, the `cb:enable_es_daily_snapshots` rake task that we detail below assumes this and parses the Space name from the `digital-objects` value of your production config. [By default](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/es-snapshots/Rakefile#L57), the snapshot files will be saved as non-public objects to a `_elasticsearch_snapshots/` subdirectory of the configured Space, which shouldn't interfere with any existing collections.
+    The easiest thing is use the same DO Space that you're already using to store your collection objects to also store your Elasticsearch snapshots. In fact, the `cb:enable_daily_search_index_snapshots` rake task that we detail below assumes this and parses the Space name from the `digital-objects` value of your production config. [By default](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/es-snapshots/Rakefile#L57), the snapshot files will be saved as non-public objects to a `_elasticsearch_snapshots/` subdirectory of the configured Space, which shouldn't interfere with any existing collections.
 
     If you don't want to use an existing DO Space to store your snapshots, you should create a new one for this purpose.
 
@@ -511,18 +540,18 @@ Though there are several options for where/how to store your snapshots, we'll de
 
         Notes:
 
-        - This script assumes the default S3 repository name of `"default"`. If you plan on executing the `es:create_snapshot_s3_repository` rake task manually (as opposed to the automated `enable_es_daily_snapshots` that we detail below) and specifing a non-default repository name, you should specify that name as the first argument to `configure-s3-snapshots`, i.e. `sudo ./configure-s3-snapshots <repository-name>`
+        - This script assumes the default S3 repository name of `"default"`. If you plan on executing the `es:create_snapshot_s3_repository` rake task manually (as opposed to the automated `enable_daily_search_index_snapshots` that we detail below) and specifing a non-default repository name, you should specify that name as the first argument to `configure-s3-snapshots`, i.e. `sudo ./configure-s3-snapshots <repository-name>`
 
         - You can find your DO Space endpoint value by navigating to `Spaces -> <the-space> -> Settings -> Endpoint` in the Digital Ocean UI. Alternatively, if you know which region your Space is in, the [endpoint value is in the format](https://www.digitalocean.com/docs/spaces/resources/s3-sdk-examples/#configure-a-client): `<REGION>.digitaloceanspaces.com`, e.g. `sfo2.digitaloceanspaces.com`
 
 4. Configure a snapshot repository and enable daily snapshots
 
-    The `cb:enable_es_daily_snapshots` rake task takes care of creating the Elasticsearch S3 snapshot repository, automated snapshot policy, and tests the snapshot policy to make sure everything's working.
+    The `cb:enable_daily_search_index_snapshots` rake task takes care of creating the Elasticsearch S3 snapshot repository, automated snapshot policy, and tests the snapshot policy to make sure everything's working.
 
     Usage:
 
     ```
-    rake cb:enable_es_daily_snapshots[<profile-name>]
+    rake cb:enable_daily_search_index_snapshots[<profile-name>]
     ```
 
     Notes:
@@ -601,13 +630,13 @@ rake cb:serve[PRODUCTION_PREVIEW]
 
 ## Updating `data/config-search.csv` For An Existing Elasticsearch Index
 
-The search configuration in `config-search.csv` is used by the `cb:generate_es_index_settings` rake task to generate an Elasticsearch index settings file which the `es:create_index` rake task then uses to create a new Elasticsearch index. If you need to make changes to `config-search.csv` after the index has already been created, you will need to synchronize these changes to Elasticsearch in order for the new configuration to take effect.
+The search configuration in `config-search.csv` is used by the `cb:generate_search_index_settings` rake task to generate an Elasticsearch index settings file which the `es:create_index` rake task then uses to create a new Elasticsearch index. If you need to make changes to `config-search.csv` after the index has already been created, you will need to synchronize these changes to Elasticsearch in order for the new configuration to take effect.
 
 While there are a number of ways to achieve this (see: [Index Aliases and Zero Downtime](https://www.elastic.co/guide/en/elasticsearch/guide/current/index-aliases.html#index-aliases)), the easiest is to:
 
 1. Delete the existing index by executing the `es:delete_index` rake task. See `es:create_index` for how to specify a user profile name if you need to target your production Elasticsearch instance.
 
-2. Execute the `cb:generate_es_index_settings` and `es:create_index` rake tasks to create a new index using the updated `config-search.csv` configuration
+2. Execute the `cb:generate_search_index_settings` and `es:create_index` rake tasks to create a new index using the updated `config-search.csv` configuration
 
 3. Execute the `es:load_bulk_data` rake task to load the documents into the new index
 

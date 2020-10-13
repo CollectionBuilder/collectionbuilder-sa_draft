@@ -323,11 +323,11 @@ namespace :cb do
 
 
   ###############################################################################
-  # generate_es_bulk_data
+  # generate_search_index_data
   ###############################################################################
 
   desc "Generate the file that we'll use to populate the Elasticsearch index via the Bulk API"
-  task :generate_es_bulk_data, [:env] do |t, args|
+  task :generate_search_index_data, [:env] do |t, args|
     args.with_defaults(
       :env => "DEVELOPMENT"
     )
@@ -398,7 +398,7 @@ namespace :cb do
 
 
   ###############################################################################
-  # generate_es_index_settings
+  # generate_search_index_settings
   ###############################################################################
 
   # Generate a file that comprises the Mapping settings for the Elasticsearch index
@@ -406,7 +406,7 @@ namespace :cb do
   # https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html
 
   desc "Generate the settings file that we'll use to create the Elasticsearch index"
-  task :generate_es_index_settings do
+  task :generate_search_index_settings do
     TEXT_FIELD_DEF_KEYS = [ 'field' ]
     BOOL_FIELD_DEF_KEYS = [ 'index', 'display', 'facet', 'multi-valued' ]
     VALID_FIELD_DEF_KEYS = TEXT_FIELD_DEF_KEYS.dup.concat BOOL_FIELD_DEF_KEYS
@@ -534,8 +534,6 @@ namespace :cb do
   end
 
 
-
-
   ###############################################################################
   # sync_objects
   #
@@ -606,5 +604,5 @@ namespace :cb do
 
   end
 
-
+# Close the namespace.
 end

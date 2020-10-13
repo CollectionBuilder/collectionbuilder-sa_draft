@@ -48,10 +48,10 @@ namespace :cb do
     Rake::Task['cb:extract_pdf_text'].invoke
 
     _announce_step 'Generate the collection search index data file'
-    Rake::Task['cb:generate_es_bulk_data'].invoke profile
+    Rake::Task['cb:generate_search_index_data'].invoke profile
 
     _announce_step 'Generate the collection search index settings file'
-    Rake::Task['cb:generate_es_index_settings'].invoke
+    Rake::Task['cb:generate_search_index_settings'].invoke
 
     # Check that the Elasticsearch instance is available and accessible.
     while ! elasticsearch_ready profile
@@ -88,11 +88,11 @@ namespace :cb do
   end
 
   ###############################################################################
-  # enable_es_daily_snapshots
+  # enable_daily_search_index_snapshots
   ###############################################################################
 
   desc "Enable daily Elasticsearch snapshots to be written to the \"#{$ES_DEFAULT_SNAPSHOT_REPOSITORY_BASE_PATH}\" directory of your Digital Ocean Space."
-  task :enable_es_daily_snapshots, [:profile] do |t, args|
+  task :enable_daily_search_index_snapshots, [:profile] do |t, args|
     # Check that the user has already completed the server-side configuration.
     if !prompt_user_for_confirmation "Did you already run the configure-s3-snapshots script on the Elasticsearch instance?"
       puts "Please see the README for instructions on how to run the configure-s3-snapshots script."
@@ -122,4 +122,5 @@ namespace :cb do
     Rake::Task['es:execute_snapshot_policy'].invoke profile
   end
 
+# Close the namespace.
 end
