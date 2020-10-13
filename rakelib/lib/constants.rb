@@ -60,6 +60,8 @@ $ES_MANUAL_SNAPSHOT_NAME_TEMPLATE = CGI.escape "<manual-snapshot-{now/d{yyyyMMdd
 
 $ES_SCHEDULED_SNAPSHOT_NAME_TEMPLATE = "<scheduled-snapshot-{now/d{yyyyMMdd-HHmm}}>"
 
+$S3_URL_REGEX = /^https?:\/\/(?<bucket>[^\.]+)\.(?<region>\w+)(?:\.cdn)?\.digitaloceanspaces\.com(?:\/(?<prefix>.+))?$/
+
 $SEARCH_CONFIG_PATH = File.join(['_data', 'config-search.csv'])
 
 

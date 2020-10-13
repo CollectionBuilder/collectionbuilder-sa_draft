@@ -1,4 +1,5 @@
 
+require 'net/http'
 require 'yaml'
 
 require_relative 'config-helpers'

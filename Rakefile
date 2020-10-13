@@ -1,19 +1,7 @@
 
-require 'csv'
 require 'json'
-require 'yaml'
-require 'net/http'
 
 require 'aws-sdk-s3'
-
-
-###############################################################################
-# Constants
-###############################################################################
-
-$S3_URL_REGEX = /^https?:\/\/(?<bucket>[^\.]+)\.(?<region>\w+)(?:\.cdn)?\.digitaloceanspaces\.com(?:\/(?<prefix>.+))?$/
-
-$SEARCH_CONFIG_PATH = File.join(['_data', 'config-search.csv'])
 
 
 ###############################################################################
