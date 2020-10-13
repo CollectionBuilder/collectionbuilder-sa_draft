@@ -30,7 +30,7 @@ def _create_index profile, index, settings
 
   # The HTTP response code was not 200.
   # Decode the JSON response body to read the error.
-  data = JSON.load(res.body)
+  data = JSON.load res.body
 
   # If creation failed because the index already exists, print a message
   # to the console and return false.
@@ -65,7 +65,7 @@ def _delete_index profile, index
   end
 
   # Decode the JSON response body to read the error.
-  data = JSON.load(res.body)
+  data = JSON.load res.body
 
   # If creation failed because the index didn't exist, print a message
   # to the console and return false.
@@ -94,7 +94,7 @@ namespace :es do
     res = cat_indices args.profile
 
     # Decode the response data.
-    data = JSON.load(res.body)
+    data = JSON.load res.body
 
     # Prett-print the response data.
     puts JSON.pretty_generate(data)
@@ -114,10 +114,15 @@ namespace :es do
     # Load the index settings from the local generated index settings file.
     dev_config = load_config :DEVELOPMENT
     settings_file_path = File.join([dev_config[:elasticsearch_dir], $ES_INDEX_SETTINGS_FILENAME])
-    settings = JSON.load(File.open(settings_file_path, 'rb'))
+
+    # Read the settings file.
+    settings = JSON.load File.open(settings_file_path, 'r', encoding: 'utf-8')
 
     # Call the _create_index helper.
     _create_index args.profile, index, settings
+
+    # Update the directory index if it exists.
+    Rake::Task['es:update_directory_index'].invoke args.profile, 'false'
   end
 
 
@@ -133,6 +138,9 @@ namespace :es do
 
     # Call the _delete_index helper.
     _delete_index args.profile, index
+
+    # Update the directory index if it exists.
+    Rake::Task['es:update_directory_index'].invoke args.profile, 'false'
   end
 
 
@@ -159,15 +167,29 @@ namespace :es do
   ###############################################################################
 
   desc "Update the Elasticsearch directory index to reflect the current indices"
-  task :update_directory_index, [:profile] do |t, args|
+  task :update_directory_index, [:profile, :raise_on_missing] do |t, args|
+    args.with_defaults(
+      :raise_on_missing => 'true'
+    )
     profile = args.profile
+    raise_on_missing = args.raise_on_missing == 'true'
 
     config = $get_config_for_es_profile.call profile
     directory_index = config[:elasticsearch_directory_index]
 
     # Get the list of existing indices.
     res = cat_indices args.profile
-    all_indices = JSON.load(res.body)
+    all_indices = JSON.load res.body
+
+    # If no directory index exists, either raise an exception or silently return based on
+    # the value of raise_on_missing.
+    if !all_indices.any? { |x| x['index'] == directory_index }
+      if raise_on_missing
+        raise "Directory index (#{directory_index}) does not exist"
+      else
+        next
+      end
+    end
 
     # Get the list of collection indices by filtering out the directory and internal indices.
     collection_indices = all_indices.reject {
@@ -179,7 +201,7 @@ namespace :es do
 
     # Get the existing directory index documents.
     res = make_request profile, :GET, "/#{directory_index}/_search"
-    data = JSON.load(res.body)
+    data = JSON.load res.body
 
     directory_indices = data['hits']['hits'].map { |x| x['_source'] }
     directory_name_index_map = Hash[ directory_indices.map { |x| [ x['index'], x ] } ]
@@ -188,7 +210,7 @@ namespace :es do
     indices_to_remove = directory_name_index_map.keys - collection_name_index_map.keys
     indices_to_remove.each do |index_name|
       delete_document profile, directory_index, index_name
-      puts "Deleted index document (#{index_name}) from the directory"
+      puts "Deleted (#{index_name}) from the directory index"
     end
 
     # Add any new collection indices to the directory.
@@ -208,9 +230,8 @@ namespace :es do
       }
 
       res = update_document profile, directory_index, index_name, document
-      puts "Added index document (#{index_name}) to the directory"
+      puts "Added (#{index_name}) to the directory index"
     end
-
   end
 
 
@@ -268,7 +289,7 @@ namespace :es do
 
     # Abort on unexpected error.
     if res.code != '200'
-      data = JSON.load(res.body)
+      data = JSON.load res.body
       _abort 'Snapshot repository creation', data
     end
 
@@ -286,7 +307,7 @@ namespace :es do
     res = get_snapshot_repositories args.profile, raise_for_status: false
 
     # Decode the response data.
-    data = JSON.load(res.body)
+    data = JSON.load res.body
 
     # Abort on unexpected error.
     if res.code != '200'
@@ -369,7 +390,7 @@ namespace :es do
                            raise_for_status: false
 
     # Decode the response data.
-    data = JSON.load(res.body)
+    data = JSON.load res.body
 
     if res.code != '200'
       _abort 'Restore snapshot', data
@@ -399,7 +420,7 @@ namespace :es do
                           raise_for_status: false
 
     # Decode the response data.
-    data = JSON.load(res.body)
+    data = JSON.load res.body
 
     if res.code == '200'
       puts "Deleted Elasticsearch snapshot: \"#{snapshot}\""
@@ -430,7 +451,7 @@ namespace :es do
     res = load_bulk_data args.profile, data, raise_for_status: false
 
     # Decode the response data.
-    data = JSON.load(res.body)
+    data = JSON.load res.body
 
     if res.code != '200'
       _abort 'Restore snapshot', data
@@ -482,7 +503,7 @@ namespace :es do
     if res.code == '200'
       puts "Deleted Elasticsearch snapshot repository: \"#{repository}\""
     else
-      data = JSON.load(res.body)
+      data = JSON.load res.body
       if data['error']['type'] == 'repository_missing_exception'
         puts "No Elasticsearch snapshot repository found for name: \"#{repository}\""
       else
@@ -522,7 +543,7 @@ namespace :es do
                                  raise_for_status: false
 
     # Decode the response data.
-    data = JSON.load(res.body)
+    data = JSON.load res.body
 
     if res.code != '200'
       _abort 'Create snapshot policy', data
@@ -544,7 +565,7 @@ namespace :es do
     res = execute_snapshot_policy args.profile, args.policy, raise_for_status: false
 
     # Decode the response data.
-    data = JSON.load(res.body)
+    data = JSON.load res.body
 
     if res.code != '200'
       _abort 'Execute snapshot policy', data
@@ -599,6 +620,15 @@ namespace :es do
         _abort 'Delete snapshot policy', data
       end
     end
+  end
+
+
+  ###############################################################################
+  # ready
+  ###############################################################################
+  desc "Display whether the Elasticsearch instance is up and running"
+  task :ready, [:profile] do |t, args|
+    puts "ready: #{elasticsearch_ready(args.profile)}"
   end
 
 

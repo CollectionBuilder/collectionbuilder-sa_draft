@@ -127,6 +127,18 @@ def get_index_metadata profile, index
 end
 
 
+# Return a boolean indicating whether the Elasticsearch instance is available.
+def elasticsearch_ready profile
+  begin
+    res = make_request profile, :GET, "/"
+  rescue StandardError
+    return false
+  else
+    return res.code == '200'
+  end
+end
+
+
 ###############################################################################
 # Elasticsearch API Endpoint Wrappers
 ###############################################################################

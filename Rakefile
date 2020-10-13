@@ -17,28 +17,6 @@ $SEARCH_CONFIG_PATH = File.join(['_data', 'config-search.csv'])
 
 
 ###############################################################################
-# Helper Functions
-###############################################################################
-
-def elasticsearch_ready config
-  # Return a boolean indicating whether the Elasticsearch instance is available.
-  req = Net::HTTP.new(config[:elasticsearch_host], config[:elasticsearch_port])
-  if config[:elasticsearch_protocol] == 'https'
-    req.use_ssl = true
-  end
-  begin
-    res = req.send_request('GET', '/')
-  rescue StandardError
-    false
-  else
-    res.code == '200'
-  end
-end
-
-
-
-
-###############################################################################
 # TASK: deploy
 ###############################################################################
 
@@ -411,6 +389,8 @@ task :generate_es_bulk_data, [:env] do |t, args|
     num_items += 1
   end
 
+  output_file.close
+
   puts "Wrote #{num_items} items to: #{output_path}"
 end
 
@@ -548,8 +528,9 @@ task :generate_es_index_settings do
   output_dir = config[:elasticsearch_dir]
   $ensure_dir_exists.call output_dir
   output_path = File.join([output_dir, $ES_INDEX_SETTINGS_FILENAME])
-  output_file = File.open(output_path, mode: "w")
-  output_file.write(JSON.pretty_generate(index_settings))
+  File.open(output_path, mode: 'w') do |f|
+    f.write(JSON.pretty_generate(index_settings))
+  end
   puts "Wrote: #{output_path}"
 end
 
@@ -559,16 +540,16 @@ end
 ###############################################################################
 
 desc "Enable daily Elasticsearch snapshots to be written to the \"#{$ES_DEFAULT_SNAPSHOT_REPOSITORY_BASE_PATH}\" directory of your Digital Ocean Space."
-task :enable_es_daily_snapshots, [:es_user] do |t, args|
+task :enable_es_daily_snapshots, [:profile] do |t, args|
   # Check that the user has already completed the server-side configuration.
   if !prompt_user_for_confirmation "Did you already run the configure-s3-snapshots script on the Elasticsearch instance?"
     puts "Please see the README for instructions on how to run the configure-s3-snapshots script."
     exit 1
   end
 
-  es_user = args.es_user
+  profile = args.profile
 
-  config = $get_config_for_es_user.call es_user
+  config = $get_config_for_profile.call profile
 
   # Assert that the specified user is associated with a production config.
   if !config.has_key? :remote_objects_url
@@ -579,14 +560,14 @@ task :enable_es_daily_snapshots, [:es_user] do |t, args|
   bucket = parse_digitalocean_space_url(config[:remote_objects_url])[0]
 
   # Create the S3 snapshot repository.
-  Rake::Task['create_es_snapshot_s3_repository'].invoke(es_user, bucket)
+  Rake::Task['create_es_snapshot_s3_repository'].invoke(profile, bucket)
 
   # Create the automatic snapshot policy.
-  Rake::Task['create_es_snapshot_policy'].invoke(es_user)
+  Rake::Task['create_es_snapshot_policy'].invoke(profile)
 
   # Manually execute the policy to test it.
   puts "Manually executing the snapshot policy to ensure that it works..."
-  Rake::Task['execute_es_snapshot_policy'].invoke(es_user)
+  Rake::Task['execute_es_snapshot_policy'].invoke(profile)
 end
 
 
@@ -594,23 +575,40 @@ end
 # setup_elasticsearch
 ###############################################################################
 
-task :setup_elasticsearch do
+task :setup_elasticsearch, [:profile] do |t, args|
+  profile = args.profile
+
+  def _announce_step step
+    puts "\n**** #{step}"
+  end
+
+  _announce_step 'Extract the text from PDF-type collection objects'
   Rake::Task['extract_pdf_text'].invoke
-  Rake::Task['generate_es_bulk_data'].invoke
+
+  _announce_step 'Generate the collection search index data file'
+  Rake::Task['generate_es_bulk_data'].invoke profile
+
+  _announce_step 'Generate the collection search index settings file'
   Rake::Task['generate_es_index_settings'].invoke
 
-  # Wait for the Elasticsearch instance to be ready.
-  config = load_config :DEVELOPMENT
-  while ! elasticsearch_ready config
+  # Check that the Elasticsearch instance is available and accessible.
+  while ! elasticsearch_ready profile
     puts 'Waiting for Elasticsearch... Is it running?'
     sleep 2
   end
 
-  # TODO - figure out why the index mapping in not right when these two tasks
-  # (create_es_index, load_es_bulk_data) are executed within this task but work
-  # fine when executed individually using rake.
-  Rake::Task['create_es_index'].invoke
-  Rake::Task['load_es_bulk_data'].invoke
+  # Create the directory index before the collection index so that the call
+  # to create_index will automatically update the directory.
+  _announce_step 'Create the directory index'
+  Rake::Task['es:create_directory_index'].invoke profile
+
+  _announce_step 'Create the collection search index'
+  Rake::Task['es:create_index'].invoke profile
+
+  _announce_step 'Load the collection data file into the search index'
+  Rake::Task['es:load_bulk_data'].invoke profile
+
+  # TODO - maybe also enable daily snapshots
 end
 
 
