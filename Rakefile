@@ -537,7 +537,7 @@ task :enable_es_daily_snapshots, [:profile] do |t, args|
 
   profile = args.profile
 
-  config = $get_config_for_profile.call profile
+  config = $get_config_for_es_profile.call profile
 
   # Assert that the specified user is associated with a production config.
   if !config.has_key? :remote_objects_url
@@ -548,22 +548,22 @@ task :enable_es_daily_snapshots, [:profile] do |t, args|
   bucket = parse_digitalocean_space_url(config[:remote_objects_url])[0]
 
   # Create the S3 snapshot repository.
-  Rake::Task['create_es_snapshot_s3_repository'].invoke(profile, bucket)
+  Rake::Task['create_es_snapshot_s3_repository'].invoke profile, bucket
 
   # Create the automatic snapshot policy.
-  Rake::Task['create_es_snapshot_policy'].invoke(profile)
+  Rake::Task['create_es_snapshot_policy'].invoke profile
 
   # Manually execute the policy to test it.
   puts "Manually executing the snapshot policy to ensure that it works..."
-  Rake::Task['execute_es_snapshot_policy'].invoke(profile)
+  Rake::Task['execute_es_snapshot_policy'].invoke profile
 end
 
 
 ###############################################################################
-# setup_elasticsearch
+# create_search_index
 ###############################################################################
 
-task :setup_elasticsearch, [:profile] do |t, args|
+task :create_search_index, [:profile] do |t, args|
   profile = args.profile
 
   def _announce_step step
@@ -597,6 +597,20 @@ task :setup_elasticsearch, [:profile] do |t, args|
   Rake::Task['es:load_bulk_data'].invoke profile
 
   # TODO - maybe also enable daily snapshots
+
+  _announce_step 'Search index is loaded and ready!'
+  # Generate sample index document and directory index URLs.
+  config = $get_config_for_es_profile.call profile
+  proto = config[:elasticsearch_protocol]
+  host = config[:elasticsearch_host]
+  port = config[:elasticsearch_port]
+  es_url = "#{proto}://#{host}:#{port}"
+
+  index_doc_url = "#{es_url}/#{config[:elasticsearch_index]}/_search?size=1"
+  puts "To view a sample search index document, visit: #{index_doc_url}"
+
+  directory_index_url = "#{es_url}/#{config[:elasticsearch_directory_index]}/_search"
+  puts "To view the directory index, visit: #{directory_index_url}"
 end
 
 
