@@ -1,5 +1,4 @@
 
-require "cgi"
 require 'csv'
 require 'json'
 require 'yaml'
@@ -14,23 +13,10 @@ require 'aws-sdk-s3'
 
 $S3_URL_REGEX = /^https?:\/\/(?<bucket>[^\.]+)\.(?<region>\w+)(?:\.cdn)?\.digitaloceanspaces\.com(?:\/(?<prefix>.+))?$/
 
-$ES_CREDENTIALS_PATH = File.join [Dir.home, ".elasticsearch", "credentials"]
-$ES_INDEX_SETTINGS_FILENAME = 'es_index_settings.json'
 $SEARCH_CONFIG_PATH = File.join(['_data', 'config-search.csv'])
-$ENV_CONFIG_FILENAMES_MAP = {
-  :DEVELOPMENT => [ '_config.yml' ],
-  :PRODUCTION_PREVIEW => [ '_config.yml', '_config.production_preview.yml' ],
-  :PRODUCTION => [ '_config.yml', '_config.production.yml' ],
-}
 
-
-# Define an Elasticsearch snapshot name template that will automatically include the current date and time.
-# See: https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html#date-math-index-names
-$ES_MANUAL_SNAPSHOT_NAME_TEMPLATE = CGI.escape "<snapshot-{now/d{yyyyMMdd-HHmm}}>"
 $ES_SCHEDULED_SNAPSHOT_NAME_TEMPLATE = "<scheduled-snapshot-{now/d{yyyyMMdd-HHmm}}>"
 
-$ES_DEFAULT_SNAPSHOT_REPOSITORY_BASE_PATH = '_elasticsearch_snapshots'
-$ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME = 'default'
 $ES_DEFAULT_SNAPSHOT_POLICY_NAME = 'default'
 
 
@@ -569,75 +555,6 @@ task :generate_es_index_settings do
   output_file = File.open(output_path, mode: "w")
   output_file.write(JSON.pretty_generate(index_settings))
   puts "Wrote: #{output_path}"
-end
-
-
-###############################################################################
-# create_es_snapshot
-###############################################################################
-
-desc "Create a new Elasticsearch snapshot"
-task :create_es_snapshot, [:es_user, :repository_name, :wait] do |t, args|
-  args.with_defaults(
-    :repository_name => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
-    :wait => 'true'
-  )
-  wait = args.wait == 'true'
-
-  config = $get_config_for_es_user.call args.es_user
-
-  res = make_es_request(
-     config=config,
-     user=args.es_user,
-     method=:PUT,
-     path="/_snapshot/#{args.repository_name}/#{$ES_MANUAL_SNAPSHOT_NAME_TEMPLATE}",
-     body=JSON.dump(
-       { :indices => [ '*', '-.security*' ],
-         :wait => wait,
-       }
-     ),
-     content_type=$APPLICATION_JSON
-  )
-  if res.code != '200'
-      raise res.body
-  end
-  # Pretty-print the JSON response.
-  puts JSON.pretty_generate(JSON.load(res.body))
-end
-
-
-###############################################################################
-# delete_es_snapshot
-###############################################################################
-
-desc "Delete an Elasticsearch snapshot"
-task :delete_es_snapshot, [:es_user, :snapshot_name, :repository_name] do |t, args|
-  assert_required_args(args, [:snapshot_name])
-  args.with_defaults(
-    :repository_name => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
-  )
-
-  config = $get_config_for_es_user.call args.es_user
-
-  snapshot_name = args.snapshot_name
-
-  res = make_es_request(
-     config=config,
-     user=args.es_user,
-     method=:DELETE,
-     path="/_snapshot/#{args.repository_name}/#{snapshot_name}"
-  )
-
-  if res.code == '200'
-    puts "Deleted Elasticsearch snapshot: \"#{snapshot_name}\""
-  else
-    data = JSON.load(res.body)
-    if data['error']['type'] == 'snapshot_missing_exception'
-      puts "No Elasticsearch snapshot found for name: \"#{snapshot_name}\""
-    else
-      raise res.body
-    end
-  end
 end
 
 

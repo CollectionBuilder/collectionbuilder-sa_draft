@@ -186,12 +186,29 @@ def get_repository_snapshots profile, repository, **kwargs
 end
 
 
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/create-snapshot-api.html
+def create_snapshot profile, repository, wait: true, name: nil, **kwargs
+  # Use the default snapshot name template if no name was specified.
+  if name == nil
+    name = $ES_MANUAL_SNAPSHOT_NAME_TEMPLATE
+  end
+  # Exclude .security* indices.
+  data = { :indices => [ '*', '-.security*' ], :wait => wait }
+  return make_json_request profile, :PUT, "/_snapshot/#{repository}/#{name}", data, **kwargs
+end
+
+
 # https://www.elastic.co/guide/en/elasticsearch/reference/7.9/restore-snapshot-api.html
 def restore_snapshot profile, repository, snapshot, wait: true, **kwargs
   path = "/_snapshot/#{repository}/#{snapshot}/_restore?wait_for_completion=#{wait}"
   return make_request profile, :POST, path, **kwargs
 end
 
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/delete-snapshot-api.html
+def delete_snapshot profile, repository, snapshot, **kwargs
+  return make_request profile, :DELETE, "/_snapshot/#{repository}/#{snapshot}", **kwargs
+end
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
 def load_bulk_data profile, ndjson_data, **kwargs

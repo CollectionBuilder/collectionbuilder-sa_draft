@@ -326,6 +326,32 @@ namespace :es do
 
 
   ###############################################################################
+  # create_snapshot
+  ###############################################################################
+
+  desc "Create a new Elasticsearch snapshot"
+  task :create_snapshot, [:profile, :repository, :wait] do |t, args|
+    args.with_defaults(
+      :repository => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
+      :wait => 'true'
+    )
+
+    # Make the request.
+    res = create_snapshot args.profile, args.repository, wait: args.wait == 'true',
+                          raise_for_status: false
+
+    # Decode the response data.
+    data = JSON.load res.body
+
+    if res.code != '200'
+      _abort 'Create snapshot', data
+    end
+
+    puts "Snapshot created"
+  end
+
+
+  ###############################################################################
   # restore_snapshot
   ###############################################################################
 
@@ -352,6 +378,37 @@ namespace :es do
     else
       # Pretty-print the JSON response.
       puts JSON.pretty_generate(data)
+    end
+  end
+
+
+  ###############################################################################
+  # delete_snapshot
+  ###############################################################################
+
+  desc "Delete an Elasticsearch snapshot"
+  task :delete_snapshot, [:profile, :snapshot, :repository] do |t, args|
+    assert_required_args(args, [:snapshot])
+    args.with_defaults(
+      :repository => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
+    )
+    snapshot = args.snapshot
+
+    # Make the request.
+    res = delete_snapshot args.profile, args.repository, snapshot,
+                          raise_for_status: false
+
+    # Decode the response data.
+    data = JSON.load(res.body)
+
+    if res.code == '200'
+      puts "Deleted Elasticsearch snapshot: \"#{snapshot}\""
+    else
+      if data['error']['type'] == 'snapshot_missing_exception'
+        puts "No Elasticsearch snapshot found for name: \"#{snapshot}\""
+      else
+        _abort 'Delete snapshot', data
+      end
     end
   end
 
