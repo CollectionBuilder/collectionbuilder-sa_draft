@@ -492,5 +492,115 @@ namespace :es do
   end
 
 
+  ###############################################################################
+  # create_snapshot_policy
+  ###############################################################################
+
+  desc "Create a policy to enable automatic Elasticsearch snapshots"
+  task :create_snapshot_policy, [:profile, :policy, :repository, :schedule] do |t, args|
+    args.with_defaults(
+      :policy => $ES_DEFAULT_SNAPSHOT_POLICY_NAME,
+      :repository => $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME,
+      :schedule => $ES_DEFAULT_SCHEDULED_SNAPSHOT_SCHEDULE,
+    )
+
+    # Define a snapshot policy that excludes .security* indices,
+    # and retains a min/max of 5/50 snapshots for 30 days.
+    data = {
+      :schedule => args.schedule,
+      :name => $ES_SCHEDULED_SNAPSHOT_NAME_TEMPLATE,
+      :repository => args.repository,
+      :config => { :indices => [ '*', '-.security*' ] },
+      :rentention => {
+        :expire_after => '30d',
+        :min_count => 5,
+        :max_count => 50
+      }
+    }
+
+    res = create_snapshot_policy args.profile, args.policy, data,
+                                 raise_for_status: false
+
+    # Decode the response data.
+    data = JSON.load(res.body)
+
+    if res.code != '200'
+      _abort 'Create snapshot policy', data
+    end
+    puts "Elasticsearch snapshot policy (#{args.policy}) created"
+  end
+
+
+  ###############################################################################
+  # execute_snapshot_policy
+  ###############################################################################
+
+  desc "Manually execute an existing Elasticsearch snapshot policy"
+  task :execute_snapshot_policy, [:profile, :policy] do |t, args|
+    args.with_defaults(
+      :policy => $ES_DEFAULT_SNAPSHOT_POLICY_NAME,
+    )
+
+    res = execute_snapshot_policy args.profile, args.policy, raise_for_status: false
+
+    # Decode the response data.
+    data = JSON.load(res.body)
+
+    if res.code != '200'
+      _abort 'Execute snapshot policy', data
+    end
+    puts "Elasticsearch snapshot policy (#{args.policy}) was executed.\n" +
+         "Run \"rake es:list_snapshot_policies[#{args.profile}]\" to check its status."
+  end
+
+
+  ###############################################################################
+  # list_snapshot_policies
+  ###############################################################################
+
+  desc "List the currently-defined Elasticsearch snapshot policies"
+  task :list_snapshot_policies, [:profile] do |t, args|
+    res = get_snapshot_policy args.profile
+
+    # Decode the response data.
+    data = JSON.load res.body
+
+    if res.code != '200'
+      _abort 'List snapshot policies', data
+    end
+
+    # Pretty-print the response.
+    puts JSON.pretty_generate(data)
+  end
+
+
+  ###############################################################################
+  # delete_snapshot_policy
+  ###############################################################################
+
+  desc "Delete an Elasticsearch snapshot policy"
+  task :delete_snapshot_policy, [:profile, :policy] do |t, args|
+    args.with_defaults(
+      :policy => $ES_DEFAULT_SNAPSHOT_POLICY_NAME,
+    )
+    policy = args.policy
+
+    res = delete_snapshot_policy args.profile, policy, raise_for_status: false
+
+    # Decode the response data.
+    data = JSON.load res.body
+
+    if res.code == '200'
+      puts "Deleted Elasticsearch snapshot policy: \"#{policy}\""
+    else
+      if data['error']['type'] == 'resource_not_found_exception'
+        puts "No Elasticsearch snapshot policy found for name: \"#{policy}\""
+      else
+        _abort 'Delete snapshot policy', data
+      end
+    end
+  end
+
+
 # Close the namespace.
 end

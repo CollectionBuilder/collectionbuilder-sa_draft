@@ -19,6 +19,12 @@ $ES_BULK_DATA_FILENAME = 'es_bulk_data.jsonl'
 
 $ES_CREDENTIALS_PATH = File.join [Dir.home, ".elasticsearch", "credentials"]
 
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/cron-expressions.html
+$ES_CRON_DAILY_AT_MIDNIGHT = '0 0 0 * * ?'
+$ES_DEFAULT_SCHEDULED_SNAPSHOT_SCHEDULE = $ES_CRON_DAILY_AT_MIDNIGHT
+
+$ES_DEFAULT_SNAPSHOT_POLICY_NAME = 'default'
+
 $ES_DEFAULT_SNAPSHOT_REPOSITORY_BASE_PATH = '_elasticsearch_snapshots'
 
 $ES_DEFAULT_SNAPSHOT_REPOSITORY_NAME = 'default'
@@ -46,11 +52,13 @@ $ES_DIRECTORY_INDEX_SETTINGS = {
   }
 }
 
+$ES_INDEX_SETTINGS_FILENAME = 'es_index_settings.json'
+
 # Define an Elasticsearch snapshot name template that will automatically include the current date and time.
 # See: https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html#date-math-index-names
 $ES_MANUAL_SNAPSHOT_NAME_TEMPLATE = CGI.escape "<manual-snapshot-{now/d{yyyyMMdd-HHmmss}}>"
 
-$ES_INDEX_SETTINGS_FILENAME = 'es_index_settings.json'
+$ES_SCHEDULED_SNAPSHOT_NAME_TEMPLATE = "<scheduled-snapshot-{now/d{yyyyMMdd-HHmm}}>"
 
 $SEARCH_CONFIG_PATH = File.join(['_data', 'config-search.csv'])
 

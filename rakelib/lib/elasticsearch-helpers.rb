@@ -217,3 +217,31 @@ def load_bulk_data profile, ndjson_data, **kwargs
                       headers: { 'content-type' => 'application/x-ndjson' },
                       **kwargs
 end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/slm-api-put-policy.html
+def create_snapshot_policy profile, name, data, **kwargs
+  return make_json_request profile, :PUT, "/_slm/policy/#{name}", data, **kwargs
+end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/slm-api-execute-lifecycle.html
+def execute_snapshot_policy profile, policy, **kwargs
+  return make_request profile, :POST, "/_slm/policy/#{policy}/_execute"
+end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/slm-api-get-policy.html
+def get_snapshot_policy profile, policy: nil, **kwargs
+  path = '/_slm/policy'
+  if policy != nil
+    path += "/#{policy}"
+  end
+  return make_request profile, :GET, path, **kwargs
+end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/slm-api-delete-policy.html
+def delete_snapshot_policy profile, policy, **kwargs
+  return make_request profile, :DELETE, "/_slm/policy/#{policy}", **kwargs
+end
