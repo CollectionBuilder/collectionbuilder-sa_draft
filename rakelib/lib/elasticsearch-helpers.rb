@@ -185,3 +185,12 @@ def restore_snapshot profile, repository, snapshot, wait: true, **kwargs
   path = "/_snapshot/#{repository}/#{snapshot}/_restore?wait_for_completion=#{wait}"
   return make_request profile, :POST, path, **kwargs
 end
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
+def load_bulk_data profile, ndjson_data, **kwargs
+  return make_request profile, :POST, "/_bulk",
+                      body: ndjson_data,
+                      headers: { 'content-type' => 'application/x-ndjson' },
+                      **kwargs
+end

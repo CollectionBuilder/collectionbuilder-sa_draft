@@ -356,5 +356,60 @@ namespace :es do
   end
 
 
+  ###############################################################################
+  # load_bulk_data
+  ###############################################################################
+
+  desc "Load index data using the Bulk API"
+  task :load_bulk_data, [:profile, :datafile_path] do |t, args|
+    # The data file must be a newline-separated JSON file as described here: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#docs-bulk-api-desc
+    datafile_path = args.datafile_path
+    if datafile_path == nil
+      dev_config = load_config :DEVELOPMENT
+      datafile_path = File.join([dev_config[:elasticsearch_dir], $ES_BULK_DATA_FILENAME])
+    end
+    data = File.open(datafile_path, 'rb').read
+
+    res = load_bulk_data args.profile, data, raise_for_status: false
+
+    # Decode the response data.
+    data = JSON.load(res.body)
+
+    if res.code != '200'
+      _abort 'Restore snapshot', data
+    end
+
+    # Collect item counts.
+    index_num_items_map = {}
+    num_other_ops = 0
+    data['items'].each do |item|
+      # The Bulk API supports several types of operations but we only expect 'index' operations
+      # here, so if not an 'index', count and ignore.
+      if !item.has_key? 'index'
+        num_other_ops += 1
+        next
+      end
+      index = item['index']['_index']
+      if !index_num_items_map.has_key? index
+        index_num_items_map[index] = 1
+      else
+        index_num_items_map[index] += 1
+      end
+    end
+
+    if index_num_items_map.length > 0
+      puts 'Indexed the following number of indice items:'
+      index_num_items_map.entries.map do |index, count|
+        puts "  #{index}: #{count}"
+      end
+    end
+
+    if num_other_ops > 0
+      puts "Datafile (#{datafile_path}) also included #{num_other_ops} non-index operations"
+    end
+
+  end
+
+
 # Close the namespace.
 end

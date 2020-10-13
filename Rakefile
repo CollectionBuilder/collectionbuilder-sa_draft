@@ -15,7 +15,6 @@ require 'aws-sdk-s3'
 $S3_URL_REGEX = /^https?:\/\/(?<bucket>[^\.]+)\.(?<region>\w+)(?:\.cdn)?\.digitaloceanspaces\.com(?:\/(?<prefix>.+))?$/
 
 $ES_CREDENTIALS_PATH = File.join [Dir.home, ".elasticsearch", "credentials"]
-$ES_BULK_DATA_FILENAME = 'es_bulk_data.jsonl'
 $ES_INDEX_SETTINGS_FILENAME = 'es_index_settings.json'
 $SEARCH_CONFIG_PATH = File.join(['_data', 'config-search.csv'])
 $ENV_CONFIG_FILENAMES_MAP = {
@@ -572,34 +571,6 @@ task :generate_es_index_settings do
   puts "Wrote: #{output_path}"
 end
 
-
-###############################################################################
-# load_es_bulk_data
-###############################################################################
-
-desc "Load the collection data into the Elasticsearch index"
-task :load_es_bulk_data, [:es_user] do |t, args|
-  args.with_defaults(
-    :es_user => nil,
-  )
-
-  config = $get_config_for_es_user.call args.es_user
-  dev_config = load_config :DEVELOPMENT
-
-  res = make_es_request(
-    config=config,
-    user=args.es_user,
-    method=:POST,
-    path = "/_bulk",
-    body=File.open(File.join([dev_config[:elasticsearch_dir], $ES_BULK_DATA_FILENAME]), 'rb').read,
-    content_type='application/x-ndjson'
-  )
-
-  if res.code != '200'
-    raise res.body
-  end
-  puts "Loaded data into Elasticsearch"
-end
 
 
 ###############################################################################
