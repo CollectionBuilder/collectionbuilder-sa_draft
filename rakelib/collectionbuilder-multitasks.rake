@@ -18,8 +18,12 @@ namespace :cb do
 
   desc "Execute all build steps required to go from metadata file and directory of " \
        "collection objects to a fully configured application"
-  task :build, [:profile] do |t, args|
-    profile = args.profile
+  task :build, [:env] do |t, args|
+    args.with_defaults(
+      :env => 'DEVELOPMENT'
+    )
+    assert_env_arg_is_valid args.env
+    env = args.env.to_sym
 
     _announce_step "Normalize collection object names"
     Rake::Task['cb:normalize_object_filenames'].invoke
@@ -28,11 +32,11 @@ namespace :cb do
     Rake::Task['cb:generate_derivatives'].invoke
 
     # create_search_index announces its own steps.
-    Rake::Task['cb:create_search_index'].invoke profile
+    Rake::Task['cb:create_search_index'].invoke $ENV_ES_PROFILE_MAP[env]
 
-    if profile == 'PRODUCTION'
+    if env == :PRODUCTION_PREVIEW or env == :PRODUCTION
       _announce_step "Sync objects to the Digital Ocean Space"
-      Rake::Task['cb:sync_objects'].invoke profile
+      Rake::Task['cb:sync_objects'].invoke $ENV_AWS_PROFILE_MAP[env]
     end
   end
 

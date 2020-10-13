@@ -83,8 +83,7 @@ def load_config env = :DEVELOPMENT
 end
 
 
-$get_config_for_es_profile =
-  ->(profile) { load_config (if profile != nil then :PRODUCTION_PREVIEW else :DEVELOPMENT end) }
+$get_config_for_es_profile =->(profile) { load_config $ES_PROFILE_ENV_MAP[profile] }
 
 
 # Parse a Digital Ocean Space URL into its constituent S3 components, with the expectation

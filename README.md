@@ -614,9 +614,9 @@ If you're using the AWS `.../.aws/credentials` file approach and you have multip
 rake cb:sync_objects[<profile_name>]
 ```
 
-For example, to use a profile named "PRODUCTION":
+For example, to use a profile named "default":
 ```
-rake cb:sync_objects[PRODUCTION]
+rake cb:sync_objects[default]
 ```
 
 ### 3. Start the Production-Preview Server

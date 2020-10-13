@@ -64,6 +64,25 @@ $S3_URL_REGEX = /^https?:\/\/(?<bucket>[^\.]+)\.(?<region>\w+)(?:\.cdn)?\.digita
 
 $SEARCH_CONFIG_PATH = File.join(['_data', 'config-search.csv'])
 
+# Define a mapping from environment symbols to Elasticsearch profile names.
+$ENV_ES_PROFILE_MAP = {
+  :DEVELOPMENT => nil,
+  :PRODUCTION_PREVIEW => 'PRODUCTION',
+  :PRODUCTION => 'PRODUCTION',
+}
+
+# Define a mapping from Elasticsearch profile names to environment symbols.
+$ES_PROFILE_ENV_MAP = {
+  nil => :DEVELOPMENT,
+  'PRODUCTION' =>  :PRODUCTION,
+}
+
+# Define a mapping from environment symbols to AWS profile names.
+$ENV_AWS_PROFILE_MAP = {
+  :PRODUCTION_PREVIEW => 'default',
+  :PRODUCTION => 'default',
+}
+
 
 ###############################################################################
 # Constants - these values should not be modified
