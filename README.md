@@ -136,7 +136,7 @@ rm -rf xpdf-tools-linux-4.02*
 ```
 
 
-##### Elasticsearch 7.7.0
+##### Elasticsearch 7.7.0<a id="elasticsearch-installation"></a>
 Download the appropriate executable for your operating system here: https://www.elastic.co/downloads/elasticsearch
 
 **Windows**  users will need to extract the files from the downloaded .zip folder and then move the extracted directory to their program files folder.
@@ -226,145 +226,35 @@ location|true|false|true|true
 full_text|true|false|false|false
 
 
-### 3. Generate Derivatives
-Use the `cb:generate_derivatives` rake task to generate a set of images for each of your collection files.
-
-Usage:
-```
-rake cb:generate_derivatives
-```
-
-This task automatically creates `/small` and `/thumbs` subdirectories as necessary within the `objects/` directory, into which it will put the files that it generates.
-
-The following configuration options are available:
-
-| option | description | default value |
-| --- | --- | --- |
-| thumbs_size | the dimensions of the generated thumbnail images | 300x300 |
-| small_size | the dimensions of the generated small images | 800x800 |
-| density | the pixel density used to generate PDF thumbnails | 300 |
-| missing | whether to only generate derivatives that don't already exist | true |
-| im_executable | ImageMagick executable name | magick |
-
-You can configure any or all of these options by specifying them in the rake command like so:
-```
-rake cb:generate_derivatives[<thumb_size>,<small_size>,<density>,<missing>]
-```
-Here's an example of overriding all of the option values:
-```
-rake cb:generate_derivatives[100x100,300x300,70,false]
-```
-It's also possible to specify individual options that you want to override, leaving the others at their defaults.
-For example, if you only wanted to set `density` to `70`, you can do:
-```
-rake cb:generate_derivatives[,,70]
-```
-
-#### Using ImageMagick 6 (tested with `v6.9.7`)
-
-If using ImageMagick 6, you need to set the `im_executable` configuration option to `convert`:
-```
-rake cb:generate_derivatives[,,,,convert]
-```
-
-
-### 4. Start Elasticsearch
+### 3. Start Elasticsearch
 
 Though this step is platform dependent, you might accomplish this by executing `elasticsearch` in a terminal.
 
+For example, if you [installed Elasticsearch under Ubuntu](#elasticsearch-installation), you can start Elasticsearch with the command:
 
-### 5. Generate and load the Elasticsearch data
+```
+sudo service elasticsearch start
+```
 
-#### 5.1 Extract PDF Text
-Use the `cb:extract_pdf_text` rake task to extract the text from your collection PDFs so that we can perform full-text searches on these documents.
+### 4. Build the project
+
+Use the `cb:build` rake task to automatically execute the following rake tasks:
+- `cb:normalize_object_filenames`
+- `cb:generate_derivatives`
+- `cb:create_search_index`
 
 Usage:
-```
-rake cb:extract_pdf_text
-```
-
-#### 5.2 Generate the Search Index Data File
-Use the `cb:generate_search_index_data` rake task to generate a file, using the collection metadata and extracted PDF text, that can be used to populate the Elasticsearch index.
-
-Local development usage:
-```
-rake cb:generate_search_index_data
-```
-
-To target your production Elasticsearch instance, you must specify a user profile name argument:
-```
-rake cb:generate_search_index_data[<profile-name>]
-```
-
-For example, to specify the user profile name "PRODUCTION":
-```
-rake cb:generate_search_index_data[PRODUCTION]
-```
-
-
-#### 5.3 Generate the Search Index Settings File
-Use the `cb:generate_search_index_settings` rake task to create an Elasticsearch index settings file from the configuration in `config-search.csv`.
-
-Usage:
-```
-rake cb:generate_search_index_settings
-```
-
-#### 5.4 Create the Search Index
-Use the `es:create_index` rake task to create the Elasticsearch index from the index settings file.
-
-**Windows** users may have trouble here with the various ports not allowing access.
-
-Local development usage:
-```
-rake es:create_index
-```
-
-To target your production Elasticsearch instance, you must specify a user profile name argument:
 
 ```
-rake es:create_index[<profile-name>]
+rake cb:build
 ```
 
-For example, to specify the user profile name "PRODUCTION":
+See [Manually building the project](#manually-building-the-project) for information on how to customize these build steps.
 
+
+### 5. Start the Development Server
 ```
-rake es:create_index[PRODUCTION]
-```
-
-When you specify a user profile name, the task assumes that you want to target the production Elasticsearch instance and will read the connection information from `_config.production.yml` and the username / password for the specified profile from your Elasticsearch credentials file.
-
-See: [Creating Your Local Elasticsearch Credentials File](#creating-your-local-elasticsearch-credentials-file)
-
-
-#### 5.5 Load Data into the Search Index
-Use the `es:load_bulk_data` rake task to load the collection data into the Elasticsearch index.
-
-Local development usage:
-```
-rake es:load_bulk_data
-```
-
-To target your production Elasticsearch instance, you must specify a user profile name argument:
-
-```
-rake es:load_bulk_data[<profile-name>]
-```
-
-For example, to specify the user profile name "PRODUCTION":
-
-```
-rake es:load_bulk_data[PRODUCTION]
-```
-
-When you specify a user profile name, the task assumes that you want to target the production Elasticsearch instance and will read the connection information from `_config.production.yml` and the username / password for the specified profile from your Elasticsearch credentials file.
-
-See: [Creating Your Local Elasticsearch Credentials File](#creating-your-local-elasticsearch-credentials-file)
-
-
-### 6. Start the Development Server
-```
-bundle exec jekyll s -H 0.0.0.0
+rake cb:serve
 ```
 
 
@@ -749,3 +639,137 @@ For example, to specify the user profile name "PRODUCTION":
 ```
 rake es:update_directory_index[PRODUCTION]
 ```
+
+
+## Manually building the project<a id="manually-building-the-project"></a>
+
+The following section provides a detailed description of how to manually execute and customize each of the project build steps.
+
+### 1. Generate Derivatives
+Use the `cb:generate_derivatives` rake task to generate a set of images for each of your collection files.
+
+Usage:
+```
+rake cb:generate_derivatives
+```
+
+This task automatically creates `/small` and `/thumbs` subdirectories as necessary within the `objects/` directory, into which it will put the files that it generates.
+
+The following configuration options are available:
+
+| option | description | default value |
+| --- | --- | --- |
+| thumbs_size | the dimensions of the generated thumbnail images | 300x300 |
+| small_size | the dimensions of the generated small images | 800x800 |
+| density | the pixel density used to generate PDF thumbnails | 300 |
+| missing | whether to only generate derivatives that don't already exist | true |
+| im_executable | ImageMagick executable name | magick |
+
+You can configure any or all of these options by specifying them in the rake command like so:
+```
+rake cb:generate_derivatives[<thumb_size>,<small_size>,<density>,<missing>]
+```
+Here's an example of overriding all of the option values:
+```
+rake cb:generate_derivatives[100x100,300x300,70,false]
+```
+It's also possible to specify individual options that you want to override, leaving the others at their defaults.
+For example, if you only wanted to set `density` to `70`, you can do:
+```
+rake cb:generate_derivatives[,,70]
+```
+
+#### Using ImageMagick 6 (tested with `v6.9.7`)
+
+If using ImageMagick 6, you need to set the `im_executable` configuration option to `convert`:
+```
+rake cb:generate_derivatives[,,,,convert]
+```
+
+### 2. Generate and load the Elasticsearch data
+
+#### 2.1 Extract PDF Text
+Use the `cb:extract_pdf_text` rake task to extract the text from your collection PDFs so that we can perform full-text searches on these documents.
+
+Usage:
+```
+rake cb:extract_pdf_text
+```
+
+#### 2.2 Generate the Search Index Data File
+Use the `cb:generate_search_index_data` rake task to generate a file, using the collection metadata and extracted PDF text, that can be used to populate the Elasticsearch index.
+
+Local development usage:
+```
+rake cb:generate_search_index_data
+```
+
+To target your production Elasticsearch instance, you must specify a user profile name argument:
+```
+rake cb:generate_search_index_data[<profile-name>]
+```
+
+For example, to specify the user profile name "PRODUCTION":
+```
+rake cb:generate_search_index_data[PRODUCTION]
+```
+
+
+#### 2.3 Generate the Search Index Settings File
+Use the `cb:generate_search_index_settings` rake task to create an Elasticsearch index settings file from the configuration in `config-search.csv`.
+
+Usage:
+```
+rake cb:generate_search_index_settings
+```
+
+#### 2.4 Create the Search Index
+Use the `es:create_index` rake task to create the Elasticsearch index from the index settings file.
+
+**Windows** users may have trouble here with the various ports not allowing access.
+
+Local development usage:
+```
+rake es:create_index
+```
+
+To target your production Elasticsearch instance, you must specify a user profile name argument:
+
+```
+rake es:create_index[<profile-name>]
+```
+
+For example, to specify the user profile name "PRODUCTION":
+
+```
+rake es:create_index[PRODUCTION]
+```
+
+When you specify a user profile name, the task assumes that you want to target the production Elasticsearch instance and will read the connection information from `_config.production.yml` and the username / password for the specified profile from your Elasticsearch credentials file.
+
+See: [Creating Your Local Elasticsearch Credentials File](#creating-your-local-elasticsearch-credentials-file)
+
+
+#### 2.5 Load Data into the Search Index
+Use the `es:load_bulk_data` rake task to load the collection data into the Elasticsearch index.
+
+Local development usage:
+```
+rake es:load_bulk_data
+```
+
+To target your production Elasticsearch instance, you must specify a user profile name argument:
+
+```
+rake es:load_bulk_data[<profile-name>]
+```
+
+For example, to specify the user profile name "PRODUCTION":
+
+```
+rake es:load_bulk_data[PRODUCTION]
+```
+
+When you specify a user profile name, the task assumes that you want to target the production Elasticsearch instance and will read the connection information from `_config.production.yml` and the username / password for the specified profile from your Elasticsearch credentials file.
+
+See: [Creating Your Local Elasticsearch Credentials File](#creating-your-local-elasticsearch-credentials-file)
