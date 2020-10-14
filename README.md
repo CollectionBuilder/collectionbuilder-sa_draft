@@ -26,12 +26,16 @@ After the `bundler` gem is installed, run the following command to install the r
 bundle install
 ```
 
-#### Rake Task Summary
+#### Rake Tasks
 
-All defined rake tasks, as reported by `rake --tasks`:
+[rake](https://ruby.github.io/rake/) tasks are used to automate project build steps and administer the Elasticsearch instance.
+
+##### Tasks
+
+All of the defined rake tasks, as reported by `rake --tasks`:
 
 ```
-rake cb:build[profile]                                                              # Execute all build steps required to go from metadata file and directory of collection objects to a fully configure...
+rake cb:build[env]                                                                  # Execute all build steps required to go from metadata file and directory of collection objects to a fully configured appl...
 rake cb:deploy                                                                      # Build site with production env
 rake cb:enable_daily_search_index_snapshots[profile]                                # Enable daily Elasticsearch snapshots to be written to the "" directory of your Digital Ocean Space
 rake cb:extract_pdf_text                                                            # Extract the text from PDF collection objects
@@ -60,6 +64,32 @@ rake es:ready[profile]                                                          
 rake es:restore_snapshot[profile,snapshot_name,wait,repository_name]                # Restore an Elasticsearch snapshot
 rake es:update_directory_index[profile,raise_on_missing]                            # Update the Elasticsearch directory index to reflect the current indices
 ```
+
+
+##### Details
+
+You can find detailed information about many of these tasks in the section: [Manually building the project](#manually-building-the-project)
+
+
+##### Definitions
+
+All rake tasks are defined by the `.rake` files in the [rakelib/](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/tree/split-rakefile/rakelib) directory. Note that the empty (less a comment justifying its existence) `Rakefile` in the project root exists only to signal to rake that it should look for tasks in `rakelib/`.
+
+The currently defined `.rake` files are as follows:
+
+| file | description |
+| --- | --- |
+| [collectionbuilder-tasks.rake](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/collectionbuilder-tasks.rake) | Single-operation project build tasks |
+| [collectionbuilder-multitasks.rake](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/collectionbuilder-multitasks.rake) | Multi-operation project build tasks |
+| [elasticsearch-tasks.rake](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake) | Elasticsearch administration tasks |
+ 
+ 
+##### Customization
+
+You can customize many of the default task configuration options by modifying the values in [rakelib/lib/constants.rb](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/lib/constants.rb)
+
+
+##### External Dependencies
 
 Some tasks have external dependencies as indicated below:
 
@@ -524,7 +554,7 @@ The search configuration in `config-search.csv` is used by the `cb:generate_sear
 
 While there are a number of ways to achieve this (see: [Index Aliases and Zero Downtime](https://www.elastic.co/guide/en/elasticsearch/guide/current/index-aliases.html#index-aliases)), the easiest is to:
 
-1. Delete the existing index by executing the `es:delete_index` rake task. See `es:create_index` for how to specify a user profile name if you need to target your production Elasticsearch instance.
+1. Delete the existing index by executing the `es:delete_index` rake task. See `es:create_index` for how to specify a user profile name if you need to target your production Elasticsearch instance. Note that `es:delete_index` automatically [invokes `es:update_directory_index`](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake#L143) to remove the deleted index from any existing directory.
 
 2. Execute the `cb:generate_search_index_settings` and `es:create_index` rake tasks to create a new index using the updated `config-search.csv` configuration
 
@@ -619,7 +649,7 @@ rake es:create_directory_index[PRODUCTION]
 
 ### Updating the `directory_` Index
 
-Use the [es:update_directory_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/master/Rakefile#L910-L996) rake task to update the `directory_` index to reflect the current state of collection indices on the Elasticsearch instance. You should execute this task each time you add/remove a collection index to/from the ES instance.
+Use the [es:update_directory_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/master/Rakefile#L910-L996) rake task to update the `directory_` index to reflect the current state of collection indices on the Elasticsearch instance. Note that the [es:create_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake#L125) and [es:delete_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake#L143) tasks automatically invoke `es:update_directory_index`.
 
 The `es:update_directory_index` task works by querying Elasticsearch for a list of all available indices that it uses to update the `directory_` index documents by either generating new documents for unrepresented collection indices, or by removing documents that represent collection indices that no longer exist.
 
@@ -643,7 +673,7 @@ rake es:update_directory_index[PRODUCTION]
 
 ## Manually building the project<a id="manually-building-the-project"></a>
 
-The following section provides a detailed description of how to manually execute and customize each of the project build steps.
+The following section provides details on how to manually execute and customize each step of the project build process.
 
 ### 1. Generate Derivatives
 Use the `cb:generate_derivatives` rake task to generate a set of images for each of your collection files.
@@ -724,7 +754,7 @@ rake cb:generate_search_index_settings
 ```
 
 #### 2.4 Create the Search Index
-Use the `es:create_index` rake task to create the Elasticsearch index from the index settings file.
+Use the `es:create_index` rake task to create the Elasticsearch index from the index settings file. Note that this task automatically [invokes `es:update_directory_index`](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake#L125) to update any existing directory index to include the newly-created index.
 
 **Windows** users may have trouble here with the various ports not allowing access.
 
