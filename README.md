@@ -26,20 +26,79 @@ After the `bundler` gem is installed, run the following command to install the r
 bundle install
 ```
 
-#### Rake Task Dependencies
+#### Rake Tasks
 
-The rake tasks that we'll be using have the following dependencies:
+[rake](https://ruby.github.io/rake/) tasks are used to automate project build steps and administer the Elasticsearch instance.
+
+##### Tasks
+
+All of the defined rake tasks, as reported by `rake --tasks`:
+
+```
+rake cb:build[env]                                                                  # Execute all build steps required to go from metadata file and directory of collection objects to a fully configured appl...
+rake cb:deploy                                                                      # Build site with production env
+rake cb:enable_daily_search_index_snapshots[profile]                                # Enable daily Elasticsearch snapshots to be written to the "" directory of your Digital Ocean Space
+rake cb:extract_pdf_text                                                            # Extract the text from PDF collection objects
+rake cb:generate_derivatives[thumbs_size,small_size,density,missing,im_executable]  # Generate derivative image files from collection objects
+rake cb:generate_search_index_data[env]                                             # Generate the file that we'll use to populate the Elasticsearch index via the Bulk API
+rake cb:generate_search_index_settings                                              # Generate the settings file that we'll use to create the Elasticsearch index
+rake cb:normalize_object_filenames[force]                                           # Rename the object files to match their corresponding objectid metadata value
+rake cb:serve[env]                                                                  # Run the local web server
+rake es:create_directory_index[profile]                                             # Create the Elasticsearch directory index
+rake es:create_index[profile]                                                       # Create the Elasticsearch index
+rake es:create_snapshot[profile,repository,wait]                                    # Create a new Elasticsearch snapshot
+rake es:create_snapshot_policy[profile,policy,repository,schedule]                  # Create a policy to enable automatic Elasticsearch snapshots
+rake es:create_snapshot_s3_repository[profile,bucket,base_path,repository_name]     # Create an Elasticsearch snapshot repository that uses S3-compatible storage
+rake es:delete_directory_index[profile]                                             # Delete the Elasticsearch directory index
+rake es:delete_index[profile]                                                       # Delete the Elasticsearch index
+rake es:delete_snapshot[profile,snapshot,repository]                                # Delete an Elasticsearch snapshot
+rake es:delete_snapshot_policy[profile,policy]                                      # Delete an Elasticsearch snapshot policy
+rake es:delete_snapshot_repository[profile,repository]                              # Delete an Elasticsearch snapshot repository
+rake es:execute_snapshot_policy[profile,policy]                                     # Manually execute an existing Elasticsearch snapshot policy
+rake es:list_indices[profile]                                                       # Pretty-print the list of existing indices to the console
+rake es:list_snapshot_policies[profile]                                             # List the currently-defined Elasticsearch snapshot policies
+rake es:list_snapshot_repositories[profile]                                         # List the existing Elasticsearch snapshot repositories
+rake es:list_snapshots[profile,repository_name]                                     # List available Elasticsearch snapshots
+rake es:load_bulk_data[profile,datafile_path]                                       # Load index data using the Bulk API
+rake es:ready[profile]                                                              # Display whether the Elasticsearch instance is up and running
+rake es:restore_snapshot[profile,snapshot_name,wait,repository_name]                # Restore an Elasticsearch snapshot
+rake es:update_directory_index[profile,raise_on_missing]                            # Update the Elasticsearch directory index to reflect the current indices
+```
+
+
+##### Details
+
+You can find detailed information about many of these tasks in the section: [Manually building the project](#manually-building-the-project)
+
+
+##### Definitions
+
+All rake tasks are defined by the `.rake` files in the [rakelib/](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/tree/split-rakefile/rakelib) directory. Note that the empty (less a comment justifying its existence) `Rakefile` in the project root exists only to signal to rake that it should look for tasks in `rakelib/`.
+
+The currently defined `.rake` files are as follows:
+
+| file | description |
+| --- | --- |
+| [collectionbuilder-tasks.rake](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/collectionbuilder-tasks.rake) | Single-operation project build tasks |
+| [collectionbuilder-multitasks.rake](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/collectionbuilder-multitasks.rake) | Multi-operation project build tasks |
+| [elasticsearch-tasks.rake](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake) | Elasticsearch administration tasks |
+ 
+ 
+##### Customization
+
+You can customize many of the default task configuration options by modifying the values in [rakelib/lib/constants.rb](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/lib/constants.rb)
+
+
+##### External Dependencies
+
+Some tasks have external dependencies as indicated below:
 
 | task name | software dependencies | service dependencies |
 | --- | --- | --- |
-| generate_derivatives | ImageMagick 7 (or compatible), Ghostscript 9.52 (or compatible) | |
-| generate_es_index_settings | | |
-| extract_pdf_text | xpdf | |
-| generate_es_bulk_data | |
-| create_es_index | | Elasticsearch |
-| delete_es_index | | Elasticsearch |
-| load_es_bulk_data | | Elasticsearch |
-| sync_objects | | Digital Ocean Space |
+| cb:generate_derivatives | ImageMagick 7 (or compatible), Ghostscript 9.52 (or compatible) | |
+| cb:extract_pdf_text | xpdf | |
+| cb:sync_objects | | Digital Ocean Space |
+| es:* | | Elasticsearch |
 
 
 #### Install the Required Software Dependencies
@@ -55,7 +114,7 @@ Download the appropriate executable for your operating system here: https://imag
 
 The scripts expect this to be executable via the command `magick`.
 
-The **Windows** version of ImageMagick is self-installing. Scroll down the screen to find the downloadable installer. 
+The **Windows** version of ImageMagick is self-installing. Scroll down the screen to find the downloadable installer.
 
 ImageMagick recommends the use of [Homebrew](https://brew.sh/) for **Mac** users. After Homebrew is installed, simply type `brew install imagemagick` into the terminal.
 
@@ -76,7 +135,7 @@ The scripts expect this to be executable via the command `gs`.
 
 **Windows**  users will use an installation wizard downloaded from the above site. Just check the default settings.
 
-**Mac** users can use Homebrew and type `brew install ghostscript` into the command line. 
+**Mac** users can use Homebrew and type `brew install ghostscript` into the command line.
 
 Here's an example of installation under **Ubuntu**:
 ```
@@ -94,9 +153,9 @@ Download the appropriate executable for your operating system under the "Downloa
 
 The scripts expect this to be executable via the command `pdftotext`.
 
-**Windows**  users will need to extract the files from the downloaded .zip folder and then move the extracted directory to their program files folder. 
+**Windows**  users will need to extract the files from the downloaded .zip folder and then move the extracted directory to their program files folder.
 
-**Mac** users can use Homebrew and type `brew install xpdf` into the command line. 
+**Mac** users can use Homebrew and type `brew install xpdf` into the command line.
 
 Here's an example of installation under Ubuntu:
 ```
@@ -107,13 +166,13 @@ rm -rf xpdf-tools-linux-4.02*
 ```
 
 
-##### Elasticsearch 7.7.0
+##### Elasticsearch 7.7.0<a id="elasticsearch-installation"></a>
 Download the appropriate executable for your operating system here: https://www.elastic.co/downloads/elasticsearch
 
-**Windows**  users will need to extract the files from the downloaded .zip folder and then move the extracted directory to their program files folder. 
+**Windows**  users will need to extract the files from the downloaded .zip folder and then move the extracted directory to their program files folder.
 
 **Mac** users can use homebrew. Following [these instructions]
-(https://www.elastic.co/guide/en/elasticsearch/reference/current/brew.html) --> Type `brew tap elastic/tap` into your terminal "to tap the Elastic Homebrew repository." Then type `brew install elastic/tap/elasticsearch-full` to install the full version.  
+(https://www.elastic.co/guide/en/elasticsearch/reference/current/brew.html) --> Type `brew tap elastic/tap` into your terminal "to tap the Elastic Homebrew repository." Then type `brew install elastic/tap/elasticsearch-full` to install the full version.
 
 
 Here's an example of installation under Ubuntu:
@@ -197,145 +256,35 @@ location|true|false|true|true
 full_text|true|false|false|false
 
 
-### 3. Generate Derivatives
-Use the `generate_derivatives` rake task to generate a set of images for each of your collection files.
-
-Usage:
-```
-rake generate_derivatives
-```
-
-This task automatically creates `/small` and `/thumbs` subdirectories as necessary within the `objects/` directory, into which it will put the files that it generates.
-
-The following configuration options are available:
-
-| option | description | default value |
-| --- | --- | --- |
-| thumbs_size | the dimensions of the generated thumbnail images | 300x300 |
-| small_size | the dimensions of the generated small images | 800x800 |
-| density | the pixel density used to generate PDF thumbnails | 300 |
-| missing | whether to only generate derivatives that don't already exist | true |
-| im_executable | ImageMagick executable name | magick |
-
-You can configure any or all of these options by specifying them in the rake command like so:
-```
-rake generate_derivatives[<thumb_size>,<small_size>,<density>,<missing>]
-```
-Here's an example of overriding all of the option values:
-```
-rake generate_derivatives[100x100,300x300,70,false]
-```
-It's also possible to specify individual options that you want to override, leaving the others at their defaults.
-For example, if you only wanted to set `density` to `70`, you can do:
-```
-rake generate_derivatives[,,70]
-```
-
-#### Using ImageMagick 6 (tested with `v6.9.7`)
-
-If using ImageMagick 6, you need to set the `im_executable` configuration option to `convert`:
-```
-rake generate_derivatives[,,,,convert]
-```
-
-
-### 4. Start Elasticsearch
+### 3. Start Elasticsearch
 
 Though this step is platform dependent, you might accomplish this by executing `elasticsearch` in a terminal.
 
+For example, if you [installed Elasticsearch under Ubuntu](#elasticsearch-installation), you can start Elasticsearch with the command:
 
-### 5. Generate and load the Elasticsearch data
+```
+sudo service elasticsearch start
+```
 
-#### 5.1 Extract PDF Text
-Use the `extract_pdf_text` rake task to extract the text from your collection PDFs so that we can perform full-text searches on these documents.
+### 4. Build the project
+
+Use the `cb:build` rake task to automatically execute the following rake tasks:
+- `cb:normalize_object_filenames`
+- `cb:generate_derivatives`
+- `cb:create_search_index`
 
 Usage:
-```
-rake extract_pdf_text
-```
-
-#### 5.2 Generate the Search Index Data File
-Use the `generate_es_bulk_data` rake task to generate a file, using the collection metadata and extracted PDF text, that can be used to populate the Elasticsearch index.
-
-Local development usage:
-```
-rake generate_es_bulk_data
-```
-
-To target your production Elasticsearch instance, you must specify a user profile name argument:
-```
-rake generate_es_bulk_data[<profile-name>]
-```
-
-For example, to specify the user profile name "admin":
-```
-rake generate_es_bulk_data[admin]
-```
-
-
-#### 5.3 Generate the Search Index Settings File
-Use the `generate_es_index_settings` rake task to create an Elasticsearch index settings file from the configuration in `config-search.csv`.
-
-Usage:
-```
-rake generate_es_index_settings
-```
-
-#### 5.4 Create the Search Index
-Use the `create_es_index` rake task to create the Elasticsearch index from the index settings file.
-
-**Windows** users may have trouble here with the various ports not allowing access. 
-
-Local development usage:
-```
-rake create_es_index
-```
-
-To target your production Elasticsearch instance, you must specify a user profile name argument:
 
 ```
-rake create_es_index[<profile-name>]
+rake cb:build
 ```
 
-For example, to specify the user profile name "admin":
+See [Manually building the project](#manually-building-the-project) for information on how to customize these build steps.
 
+
+### 5. Start the Development Server
 ```
-rake create_es_index[admin]
-```
-
-When you specify a user profile name, the task assumes that you want to target the production Elasticsearch instance and will read the connection information from `_config.production.yml` and the username / password for the specified profile from your Elasticsearch credentials file.
-
-See: [Creating Your Local Elasticsearch Credentials File](#creating-your-local-elasticsearch-credentials-file)
-
-
-#### 5.5 Load Data into the Search Index
-Use the `load_es_bulk_data` rake task to load the collection data into the Elasticsearch index.
-
-Local development usage:
-```
-rake load_es_bulk_data
-```
-
-To target your production Elasticsearch instance, you must specify a user profile name argument:
-
-```
-rake load_es_bulk_data[<profile-name>]
-```
-
-For example, to specify the user profile name "admin":
-
-```
-rake load_es_bulk_data[admin]
-```
-
-When you specify a user profile name, the task assumes that you want to target the production Elasticsearch instance and will read the connection information from `_config.production.yml` and the username / password for the specified profile from your Elasticsearch credentials file.
-
-See: [Creating Your Local Elasticsearch Credentials File](#creating-your-local-elasticsearch-credentials-file)
-
-
-### 6. Start the Development Server
-```
-bundle exec jekyll s -H 0.0.0.0
+rake cb:serve
 ```
 
 
@@ -353,19 +302,19 @@ This section will describe how to get Elasticsearch up and running on a Digital 
 
     ![do_custom_image_import](https://user-images.githubusercontent.com/585182/87325500-8678f500-c4ff-11ea-9a70-e65b437b4c20.gif)
 
-- You will need to select a "Distribution" -- Choose `Ubuntu`. 
-- You will need to select a distribution center location. Choose the location closest to your physical location. 
+- You will need to select a "Distribution" -- Choose `Ubuntu`.
+- You will need to select a distribution center location. Choose the location closest to your physical location.
 
 2. Once the image is available within your account, click on `More -> Start a droplet`
 
-- You can simply leave the default settings and scroll to the bottom of the page to start this. 
+- You can simply leave the default settings and scroll to the bottom of the page to start this.
 
 3. Once the Droplet is running, navigate to:
 
     ```
     Networking -> Firewalls -> Create Firewall
     ```
-    
+
     Give the firewall a name and add the rules as depicted in the below screenshot:
 
     ![Screenshot from 2020-07-13 12-05-32](https://user-images.githubusercontent.com/585182/87326758-2c792f00-c501-11ea-9a82-45977a8c7582.png)
@@ -387,9 +336,9 @@ This section will describe how to get Elasticsearch up and running on a Digital 
         2. Take note of the `ipv4` IP address displayed at the top
         3. However you do this, create a `A` DNS record to associate a root/sub-domain with your Droplet IP address
 
-  You will need to have a domain to create an A record. If you have one hosted somewhere, such as a personal website, you can go to the area where they manage the DNS records (A and CNAME, etc.) and add an A record to a new subdomain, such as, digitalocean.johndoe.com and point it to the ipv4 IP addresss on your Droplet. 
+  You will need to have a domain to create an A record. If you have one hosted somewhere, such as a personal website, you can go to the area where they manage the DNS records (A and CNAME, etc.) and add an A record to a new subdomain, such as, digitalocean.johndoe.com and point it to the ipv4 IP addresss on your Droplet.
 
-  Once that is set up, you will enter that full domain (i.e. `digitalocean.johndoe.com) in step 9 below to generate the certificate. 
+  Once that is set up, you will enter that full domain (i.e. `digitalocean.johndoe.com) in step 9 below to generate the certificate.
 
     2. Generate the certificate
         1. In the Digital Ocean UI, navigate to `Droplets -> <the-droplet>`
@@ -407,12 +356,12 @@ This section will describe how to get Elasticsearch up and running on a Digital 
 5. Check that Elasticsearch is accessible via HTTPS
 
     1. In a web browser, surf on over to: `https://<the-root/sub-domain-you-created>:9200` and you should see something like this:
-    
+
     ![Screenshot from 2020-07-16 16-21-18](https://user-images.githubusercontent.com/585182/87718795-6ad05180-c780-11ea-909e-87f5f6c9ef21.png)
-    
+
     It's reporting a `security_exception` because the server is configured to prevent anonymous, public users from accessing things they shouldn't. You'll see a more friendly response at: `https://<the-root/sub-domain-you-created>:9200/_search`
-  
-  
+
+
 6. Generate your Elasticsearch passwords
 
     In order to securely administer your Elasticsearch server, you'll need to generate passwords for the built-in Elasticsearch users.
@@ -423,7 +372,7 @@ This section will describe how to get Elasticsearch up and running on a Digital 
         2. Click the `Console []` link on the right side
         3. At the `elastic login:` prompt, type `ubuntu` and hit `ENTER`
         4. At the `Password:` prompt, type `password` and hit `ENTER`
-    
+
     Execute the command:
 
     ```
@@ -447,7 +396,7 @@ This section will describe how to get Elasticsearch up and running on a Digital 
    Execute the command:
 
     ```
-    sudo passwd ubuntu 
+    sudo passwd ubuntu
     ```
 
     The flow looks like this:
@@ -470,67 +419,67 @@ Though there are several options for where/how to store your snapshots, we'll de
 
 1. Choose or create a Digital Ocean Space
 
-    The easiest thing is use the same DO Space that you're already using to store your collection objects to also store your Elasticsearch snapshots. In fact, the `enable_es_daily_snapshots` rake task that we detail below assumes this and parses the Space name from the `digital-objects` value of your production config. [By default](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/es-snapshots/Rakefile#L57), the snapshot files will be saved as non-public objects to a `_elasticsearch_snapshots/` subdirectory of the configured Space, which shouldn't interfere with any existing collections.
+    The easiest thing is use the same DO Space that you're already using to store your collection objects to also store your Elasticsearch snapshots. In fact, the `cb:enable_daily_search_index_snapshots` rake task that we detail below assumes this and parses the Space name from the `digital-objects` value of your production config. [By default](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/es-snapshots/Rakefile#L57), the snapshot files will be saved as non-public objects to a `_elasticsearch_snapshots/` subdirectory of the configured Space, which shouldn't interfere with any existing collections.
 
     If you don't want to use an existing DO Space to store your snapshots, you should create a new one for this purpose.
-   
+
 2. Create a Digital Ocean Space access key
 
     Elasticsearch will need to specify credentials when reading and writing snapshot objects on the Digital Ocean Space.
-   
+
     You can generate your Digital Ocean access key by going to your DO account page and clicking on:
-    
+
     `API -> Spaces access keys -> Generate New Key`
-        
+
     A good name for this key is something like: `elasticsearch-snapshot-writer`
 
 3. Configure Elasticsearch to access the Space
 
     This step needs to be completed on the Elasticsearch server instance itself.
-    
+
     1. Open a console window:
 
         1. In the Digital Ocean UI, navigate to `Droplets -> <the-droplet>`
         2. Click the `Console []` link on the right side
         3. At the `elastic login:` prompt, type `ubuntu` and hit `ENTER`
         4. At the `Password:` prompt, type `password` (or your updated password) and hit `ENTER`
-    
+
     2. Run the [configure-s3-snapshots](https://github.com/CollectionBuilder/collectionbuilder-sa_elasticsearch-image/blob/master/files/configure-s3-snapshots) shell script
-    
+
         Usage:
-        
+
         `sudo ./configure-s3-snapshots`
-        
+
         This script will:
-       
+
         1. Check whether an S3-compatible endpoint has already been configured
         2. Install the `repository-s3` plugin if necessary
         3. Prompt you for your S3-compatible endpoint (see note)
         4. Prompt you for the DO Space access key
         5. Prompt you for the DO Space secret key
-    
+
         Notes:
-        
-        - This script assumes the default S3 repository name of `"default"`. If you plan on executing the `create_es_snapshot_s3_repository` rake task manually (as opposed to the automated `enable_es_daily_snapshots` that we detail below) and specifing a non-default repository name, you should specify that name as the first argument to `configure-s3-snapshots`, i.e. `sudo ./configure-s3-snapshots <repository-name>`            
-        
+
+        - This script assumes the default S3 repository name of `"default"`. If you plan on executing the `es:create_snapshot_s3_repository` rake task manually (as opposed to the automated `enable_daily_search_index_snapshots` that we detail below) and specifing a non-default repository name, you should specify that name as the first argument to `configure-s3-snapshots`, i.e. `sudo ./configure-s3-snapshots <repository-name>`
+
         - You can find your DO Space endpoint value by navigating to `Spaces -> <the-space> -> Settings -> Endpoint` in the Digital Ocean UI. Alternatively, if you know which region your Space is in, the [endpoint value is in the format](https://www.digitalocean.com/docs/spaces/resources/s3-sdk-examples/#configure-a-client): `<REGION>.digitaloceanspaces.com`, e.g. `sfo2.digitaloceanspaces.com`
-      
+
 4. Configure a snapshot repository and enable daily snapshots
 
-    The `enable_es_daily_snapshots` rake task takes care of creating the Elasticsearch S3 snapshot repository, automated snapshot policy, and tests the snapshot policy to make sure everything's working.
-    
+    The `cb:enable_daily_search_index_snapshots` rake task takes care of creating the Elasticsearch S3 snapshot repository, automated snapshot policy, and tests the snapshot policy to make sure everything's working.
+
     Usage:
-    
+
     ```
-    rake enable_es_daily_snapshots[<profile-name>]
+    rake cb:enable_daily_search_index_snapshots[<profile-name>]
     ```
-    
+
     Notes:
-    
+
     - This task only targets remote production (not local development) Elasticsearch instances, so you must specify an Elasticsearch credentials profile name.
-    - This task assumes that you want to use all of the default snapshot configuration values which includes using the same Digital Ocean Space that you've configured in the `digital-objects` value of your production config to store your snapshot files. If you want to use a different repository name, DO Space, or snapshot schedule other than daily, you'll have to run the `create_es_snapshot_s3_repository`, `create_es_snapshot_policy`, and `execute_es_snapshot_policy` rake tasks manually.
-    
-    
+    - This task assumes that you want to use all of the default snapshot configuration values which includes using the same Digital Ocean Space that you've configured in the `digital-objects` value of your production config to store your snapshot files. If you want to use a different repository name, DO Space, or snapshot schedule other than daily, you'll have to run the `es:create_snapshot_s3_repository`, `es:create_snapshot_policy`, and `es:execute_snapshot_policy` rake tasks manually.
+
+
 ## Creating Your Local Elasticsearch Credentials File<a id="creating-your-local-elasticsearch-credentials-file"></a>
 
 After generating passwords for your built-in Elasticsearch users, the ES-related rake tasks will need access to these usernames / passwords (namely that of the `elastic` user) in order to communicate with the server. This is done by creating a local Elasticsearch credentials file.
@@ -550,7 +499,7 @@ Here's a template that works with the other examples in this documentation, requ
 
 ```
 users:
-  admin:
+  PRODUCTION:
     username: elastic
     password: <password>
 ```
@@ -566,48 +515,50 @@ Update the `digital-objects` value in `_config.production_preview.yml` with the 
 
 ### 2. Configure Your AWS Credentials
 
-Digital Ocean Spaces use an API that's compatible with Amazon's AWS S3 service. The `sync_objects` rake task that we use in the next step uses the AWS Ruby SDK to interact with the Digital Ocean Space. To enable `sync_objects` to access the Space, you need to configure your shared AWS credentials as described here: https://docs.aws.amazon.com/sdk-for-ruby/v3/developer-guide/setup-config.html#aws-ruby-sdk-credentials-shared
+Digital Ocean Spaces use an API that's compatible with Amazon's AWS S3 service. The `cb:sync_objects` rake task that we use in the next step uses the AWS Ruby SDK to interact with the Digital Ocean Space. To enable `sync_objects` to access the Space, you need to configure your shared AWS credentials as described here: https://docs.aws.amazon.com/sdk-for-ruby/v3/developer-guide/setup-config.html#aws-ruby-sdk-credentials-shared
 
 You can generate your Digital Ocean access key by going to your DO account page and clicking on:
 API -> Spaces access keys -> Generate New Key
 
 ### 3. Upload Your Objects to the Digital Ocean Space
 
-Use the `sync_objects` rake task to upload your objects to the Digital Ocean Space.
+Use the `cb:sync_objects` rake task to upload your objects to the Digital Ocean Space.
 
 Usage:
 ```
-rake sync_objects
+rake cb:sync_objects
 ```
 
 If you're using the AWS `.../.aws/credentials` file approach and you have multiple named profiles, you can specify which profile you'd like to use as follows:
 ```
-rake sync_objects[<profile_name>]
+rake cb:sync_objects[<profile_name>]
 ```
 
-For example, to use a profile named "collectionbuilder":
+For example, to use a profile named "default":
 ```
-rake sync_objects[collectionbuilder]
+rake cb:sync_objects[default]
 ```
 
 ### 3. Start the Production-Preview Server
 
+Use the `cb:serve` rake task to start the production-preview web server
+
 ```
-jekyll s -H 0.0.0.0 --config _config.yml,_config.production_preview.yml
+rake cb:serve[PRODUCTION_PREVIEW]
 ```
 
 
 ## Updating `data/config-search.csv` For An Existing Elasticsearch Index
 
-The search configuration in `config-search.csv` is used by the `generate_es_index_settings` rake task to generate an Elasticsearch index settings file which the `create_es_index` rake task then uses to create a new Elasticsearch index. If you need to make changes to `config-search.csv` after the index has already been created, you will need to synchronize these changes to Elasticsearch in order for the new configuration to take effect.
+The search configuration in `config-search.csv` is used by the `cb:generate_search_index_settings` rake task to generate an Elasticsearch index settings file which the `es:create_index` rake task then uses to create a new Elasticsearch index. If you need to make changes to `config-search.csv` after the index has already been created, you will need to synchronize these changes to Elasticsearch in order for the new configuration to take effect.
 
 While there are a number of ways to achieve this (see: [Index Aliases and Zero Downtime](https://www.elastic.co/guide/en/elasticsearch/guide/current/index-aliases.html#index-aliases)), the easiest is to:
 
-1. Delete the existing index by executing the `delete_es_index` rake task. See `create_es_index` for how to specify a user profile name if you need to target your production Elasticsearch instance.
+1. Delete the existing index by executing the `es:delete_index` rake task. See `es:create_index` for how to specify a user profile name if you need to target your production Elasticsearch instance. Note that `es:delete_index` automatically [invokes `es:update_directory_index`](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake#L143) to remove the deleted index from any existing directory.
 
-2. Execute the `generate_es_index_settings` and `create_es_index` rake tasks to create a new index using the updated `config-search.csv` configuration
+2. Execute the `cb:generate_search_index_settings` and `es:create_index` rake tasks to create a new index using the updated `config-search.csv` configuration
 
-3. Execute the `load_es_bulk_data` rake task to load the documents into the new index
+3. Execute the `es:load_bulk_data` rake task to load the documents into the new index
 
 
 ## Cross-Collection Search
@@ -677,44 +628,178 @@ The cross-collection search page queries this index in order to populate its lis
 
 ### Creating the `directory_` Index
 
-Use the [create_es_directory_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/master/Rakefile#L876-L907) rake task to create the `directory_` index on your Elasticsearch instance.
+Use the [es:create_directory_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/master/Rakefile#L876-L907) rake task to create the `directory_` index on your Elasticsearch instance.
 
-Note that the `create_es_directory_index` task operates directly on the Elasticsearch instance and has no dependency on the collection-specific codebase in which you execute it.
+Note that the `es:create_directory_index` task operates directly on the Elasticsearch instance and has no dependency on the collection-specific codebase in which you execute it.
 
 Local development usage:
 ```
-rake create_es_directory_index
+rake es:create_directory_index
 ```
 
 To target your production Elasticsearch instance, you must specify a user profile name argument:
 ```
-rake create_es_directory_index[<profile-name>]
+rake es:create_directory_index[<profile-name>]
 ```
 
-For example, to specify the user profile name "admin":
+For example, to specify the user profile name "PRODUCTION":
 ```
-rake create_es_directory_index[admin]
+rake es:create_directory_index[PRODUCTION]
 ```
 
 ### Updating the `directory_` Index
 
-Use the [update_es_directory_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/master/Rakefile#L910-L996) rake task to update the `directory_` index to reflect the current state of collection indices on the Elasticsearch instance. You should execute this task each time you add/remove a collection index to/from the ES instance.
+Use the [es:update_directory_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/master/Rakefile#L910-L996) rake task to update the `directory_` index to reflect the current state of collection indices on the Elasticsearch instance. Note that the [es:create_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake#L125) and [es:delete_index](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake#L143) tasks automatically invoke `es:update_directory_index`.
 
-The `update_es_directory_index` task works by querying Elasticsearch for a list of all available indices that it uses to update the `directory_` index documents by either generating new documents for unrepresented collection indices, or by removing documents that represent collection indices that no longer exist.
+The `es:update_directory_index` task works by querying Elasticsearch for a list of all available indices that it uses to update the `directory_` index documents by either generating new documents for unrepresented collection indices, or by removing documents that represent collection indices that no longer exist.
 
-Note that the `update_es_directory_index` task operates directly on the Elasticsearch instance and has no dependency on the collection-specific codebase in which you execute it.
+Note that the `es:update_directory_index` task operates directly on the Elasticsearch instance and has no dependency on the collection-specific codebase in which you execute it.
 
 Local development usage:
 ```
-rake update_es_directory_index
+rake es:update_directory_index
 ```
 
 To target your production Elasticsearch instance, you must specify a user profile name argument:
 ```
-rake update_es_directory_index[<profile-name>]
+rake es:update_directory_index[<profile-name>]
 ```
 
-For example, to specify the user profile name "admin":
+For example, to specify the user profile name "PRODUCTION":
 ```
-rake update_es_directory_index[admin]
+rake es:update_directory_index[PRODUCTION]
 ```
+
+
+## Manually building the project<a id="manually-building-the-project"></a>
+
+The following section provides details on how to manually execute and customize each step of the project build process.
+
+### 1. Generate Derivatives
+Use the `cb:generate_derivatives` rake task to generate a set of images for each of your collection files.
+
+Usage:
+```
+rake cb:generate_derivatives
+```
+
+This task automatically creates `/small` and `/thumbs` subdirectories as necessary within the `objects/` directory, into which it will put the files that it generates.
+
+The following configuration options are available:
+
+| option | description | default value |
+| --- | --- | --- |
+| thumbs_size | the dimensions of the generated thumbnail images | 300x300 |
+| small_size | the dimensions of the generated small images | 800x800 |
+| density | the pixel density used to generate PDF thumbnails | 300 |
+| missing | whether to only generate derivatives that don't already exist | true |
+| im_executable | ImageMagick executable name | magick |
+
+You can configure any or all of these options by specifying them in the rake command like so:
+```
+rake cb:generate_derivatives[<thumb_size>,<small_size>,<density>,<missing>]
+```
+Here's an example of overriding all of the option values:
+```
+rake cb:generate_derivatives[100x100,300x300,70,false]
+```
+It's also possible to specify individual options that you want to override, leaving the others at their defaults.
+For example, if you only wanted to set `density` to `70`, you can do:
+```
+rake cb:generate_derivatives[,,70]
+```
+
+#### Using ImageMagick 6 (tested with `v6.9.7`)
+
+If using ImageMagick 6, you need to set the `im_executable` configuration option to `convert`:
+```
+rake cb:generate_derivatives[,,,,convert]
+```
+
+### 2. Generate and load the Elasticsearch data
+
+#### 2.1 Extract PDF Text
+Use the `cb:extract_pdf_text` rake task to extract the text from your collection PDFs so that we can perform full-text searches on these documents.
+
+Usage:
+```
+rake cb:extract_pdf_text
+```
+
+#### 2.2 Generate the Search Index Data File
+Use the `cb:generate_search_index_data` rake task to generate a file, using the collection metadata and extracted PDF text, that can be used to populate the Elasticsearch index.
+
+Local development usage:
+```
+rake cb:generate_search_index_data
+```
+
+To target your production Elasticsearch instance, you must specify a user profile name argument:
+```
+rake cb:generate_search_index_data[<profile-name>]
+```
+
+For example, to specify the user profile name "PRODUCTION":
+```
+rake cb:generate_search_index_data[PRODUCTION]
+```
+
+
+#### 2.3 Generate the Search Index Settings File
+Use the `cb:generate_search_index_settings` rake task to create an Elasticsearch index settings file from the configuration in `config-search.csv`.
+
+Usage:
+```
+rake cb:generate_search_index_settings
+```
+
+#### 2.4 Create the Search Index
+Use the `es:create_index` rake task to create the Elasticsearch index from the index settings file. Note that this task automatically [invokes `es:update_directory_index`](https://github.com/CollectionBuilder/collectionbuilder-sa_draft/blob/split-rakefile/rakelib/elasticsearch-tasks.rake#L125) to update any existing directory index to include the newly-created index.
+
+**Windows** users may have trouble here with the various ports not allowing access.
+
+Local development usage:
+```
+rake es:create_index
+```
+
+To target your production Elasticsearch instance, you must specify a user profile name argument:
+
+```
+rake es:create_index[<profile-name>]
+```
+
+For example, to specify the user profile name "PRODUCTION":
+
+```
+rake es:create_index[PRODUCTION]
+```
+
+When you specify a user profile name, the task assumes that you want to target the production Elasticsearch instance and will read the connection information from `_config.production.yml` and the username / password for the specified profile from your Elasticsearch credentials file.
+
+See: [Creating Your Local Elasticsearch Credentials File](#creating-your-local-elasticsearch-credentials-file)
+
+
+#### 2.5 Load Data into the Search Index
+Use the `es:load_bulk_data` rake task to load the collection data into the Elasticsearch index.
+
+Local development usage:
+```
+rake es:load_bulk_data
+```
+
+To target your production Elasticsearch instance, you must specify a user profile name argument:
+
+```
+rake es:load_bulk_data[<profile-name>]
+```
+
+For example, to specify the user profile name "PRODUCTION":
+
+```
+rake es:load_bulk_data[PRODUCTION]
+```
+
+When you specify a user profile name, the task assumes that you want to target the production Elasticsearch instance and will read the connection information from `_config.production.yml` and the username / password for the specified profile from your Elasticsearch credentials file.
+
+See: [Creating Your Local Elasticsearch Credentials File](#creating-your-local-elasticsearch-credentials-file)
