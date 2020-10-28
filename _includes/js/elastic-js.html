@@ -2,7 +2,13 @@
 {%- assign facetFields = fields | where: "facet","true" -%}
 {%- assign displayFields = fields | where: "display","true" -%}
 
-<script>
+<script type="module">
+ // Import the search facet component module to register the custom elements.
+ import {
+   SearchFacet,
+   SearchFacetValue
+ } from "/assets/js/components/SearchFacet.js"
+
  // Inject the search config data from the liquid template
  // into javascript variables.
  const ALL_FIELD_NAMES = [
@@ -54,7 +60,7 @@
  async function getIndicesDirectory () {
    /* Attempt to retrieve the indices directory from the server.
     */
-   res = await (await fetch(ES_DIRECTORY_URL))
+   const res = await (await fetch(ES_DIRECTORY_URL))
    if (res.status === 200) {
      return (await res.json())
        .hits
@@ -334,132 +340,136 @@
      (a, b) => selectedFacetVals.indexOf(b.key) - selectedFacetVals.indexOf(a.key)
    )
 
-   // Clone the facet template element.
-   const facetTemplate = document.getElementById("facet")
-   const facetEl = clone(facetTemplate)
-
-   // Set the facet name by updating the text node while leaving the
-   // collapsed-icon <span> alone.
    // Special-case the collection facet to have a more descriptive title.
-   const facetNameEl = facetEl.querySelector(".facet-name").childNodes[0]
    if (facetName === "collection" && IS_MULTI_SEARCH) {
-     facetNameEl.textContent = "Include results from:"
+     facetName = "Include results from:"
    } else {
-     facetNameEl.textContent = snakeToTitleCase(facetName)
+     facetName = snakeToTitleCase(facetName)
    }
 
-   // Add all the facet values rows.
-   const facetValuesEl = facetEl.querySelector(".facet-values")
-   const facetValueTemplate = document.getElementById("facet-value")
-   buckets.forEach((bucket, i) => {
-     // Clone the facet-value template element.
-     const facetValueEl = clone(facetValueTemplate)
-     // Set the data-facet/value attributes.
-     facetValueEl.dataset["facet"] = facetName
-     facetValueEl.dataset["value"] = bucket.key
+   // Define a helper that will create an HTML search-facet-value element string from
+   // a search response aggregation bucket.
+   const bucketToSearchFacetValueStr = ({ key, doc_count }) =>
+     `<search-facet-value value="${key}" doc-count="${doc_count}"></search-facet-value>`
 
-     // Remove the top border on the first value.
-     if (i === 0) {
-       facetValueEl.style.borderTop = "none"
-     }
+   // Create a SearchFacet component.
+   const searchFacetEl = createElement(
+     `<search-facet name="${facetName}">
+        ${buckets.map(bucketToSearchFacetValueStr).join("")}
+      </search-facet>`
+   )
 
-     // Set the properties whose value is dependent on whether
-     // the facet value is currently selected.
-     const facetValueDocCountEl = facetValueEl.querySelector(".facet-value-doc-count")
-     if (!bucket.selected) {
-       facetValueDocCountEl.textContent = bucket.doc_count
-     } else {
-       facetValueEl.style.backgroundColor = "#17a2b8"
-       facetValueEl.style.color = "#fff"
-       // Special-case the collection facet to always show the doc count.
-       if (facetName === "collection") {
-         facetValueDocCountEl.textContent = bucket.doc_count
-       } else {
-         facetValueDocCountEl.textContent = "x"
-       }
-     }
+   /* buckets.forEach((bucket, i) => {
 
-     // Set the facet value name and title attribute to show full value
-     // on hover when truncated.
-     const facetValueName = bucket.key.length ? bucket.key : "&lt;unknown&gt;"
-     const facetValueNameEl = facetValueEl.querySelector(".facet-value-name")
-     facetValueNameEl.innerHTML = facetValueName
-     facetValueNameEl.setAttribute("title", facetValueName)
+    *   // Clone the facet-value template element.
+    *   const facetValueEl = clone(facetValueTemplate)
+    *   // Set the data-facet/value attributes.
+    *   facetValueEl.dataset["facet"] = facetName
+    *   facetValueEl.dataset["value"] = bucket.key
 
-     // Append the facet value to the values container.
-     facetValuesEl.appendChild(facetValueEl)
-   })
+    *   // Remove the top border on the first value.
+    *   if (i === 0) {
+    *     facetValueEl.style.borderTop = "none"
+    *   }
 
-   // ** Define show/hide and selection behaviors **
+    *   // Set the properties whose value is dependent on whether
+    *   // the facet value is currently selected.
+    *   const facetValueDocCountEl = facetValueEl.querySelector(".facet-value-doc-count")
+    *   if (!bucket.selected) {
+    *     facetValueDocCountEl.textContent = bucket.doc_count
+    *   } else {
+    *     facetValueEl.style.backgroundColor = "#17a2b8"
+    *     facetValueEl.style.color = "#fff"
+    *     // Special-case the collection facet to always show the doc count.
+    *     if (facetName === "collection") {
+    *       facetValueDocCountEl.textContent = bucket.doc_count
+    *     } else {
+    *       facetValueDocCountEl.textContent = "x"
+    *     }
+    *   }
 
-   const rowEls = Array.from(facetEl.querySelectorAll(".facet-value"))
-   const moreOrFewerEl = facetEl.querySelector(".show-more")
+    *   // Set the facet value name and title attribute to show full value
+    *   // on hover when truncated.
+    *   const facetValueName = bucket.key.length ? bucket.key : "&lt;unknown&gt;"
+    *   const facetValueNameEl = facetValueEl.querySelector(".facet-value-name")
+    *   facetValueNameEl.innerHTML = facetValueName
+    *   facetValueNameEl.setAttribute("title", facetValueName)
 
-   // Get the rows that will be controlled by the show more/less feature.
-   const moreRowEls = rowEls.slice(MAX_NUM_VISIBLE_FACET_VALUES, rowEls.length)
+    *   // Append the facet value to the values container.
+    *   facetValuesEl.appendChild(facetValueEl)
+    * })
 
-   // Hide values that exceed the number of default visible.
-   const toggleShowMore = () => {
-     moreRowEls.forEach(el => el.style.display = showMore ? "flex" : "none")
-     moreOrFewerEl.innerText = `show ${showMore ? "fewer" : "more"}`
-     showMore = !showMore
-   }
+    * // ** Define show/hide and selection behaviors **
 
-   // Init showMore to false so that an initial call to toggleShowMore will
-   // result in the extra rows being hidden.
-   let showMore = false
+    * const rowEls = Array.from(facetEl.querySelectorAll(".facet-value"))
+    * const moreOrFewerEl = facetEl.querySelector(".show-more")
 
-   if (moreRowEls.length === 0) {
-     // There are no hidden rows, so remove the more/fewer element entirely.
-     moreOrFewerEl.remove()
-   } else {
-     // Hide the extra rows.
-     toggleShowMore()
-   }
+    * // Get the rows that will be controlled by the show more/less feature.
+    * const moreRowEls = rowEls.slice(MAX_NUM_VISIBLE_FACET_VALUES, rowEls.length)
 
-   // Define a function to toggle the collapsed/expanded row state.
-   let collapsed = false
-   const collapsedIconEl = facetEl.querySelector(".collapsed-icon")
-   const toggleCollapsed = () => {
-     if (!collapsed) {
-       // Hide all the rows.
-       rowEls.forEach(el => el.style.display = "none")
-       moreOrFewerEl.style.display = "none"
-     } else {
-       // Iterate through the facet value rows, setting visibility based on
-       // whether there are normally hidden rows and, if so, the state of
-       // show more/less.
-       rowEls.forEach((el, i) => {
-         if (moreRowEls.length === 0 ||
-             (!showMore || i < MAX_NUM_VISIBLE_FACET_VALUES)) {
-           el.style.display = "flex"
-         }
-       })
-       moreOrFewerEl.style.display = "block"
-     }
+    * // Hide values that exceed the number of default visible.
+    * const toggleShowMore = () => {
+    *   moreRowEls.forEach(el => el.style.display = showMore ? "flex" : "none")
+    *   moreOrFewerEl.innerText = `show ${showMore ? "fewer" : "more"}`
+    *   showMore = !showMore
+    * }
 
-     collapsedIconEl.innerText = collapsed ? "-" : "+"
-     collapsed = !collapsed
-   }
+    * // Init showMore to false so that an initial call to toggleShowMore will
+    * // result in the extra rows being hidden.
+    * let showMore = false
 
-   // Add a single facet element click handler.
-   facetEl.addEventListener("click", e => {
-     const el = e.target
-     if (el.classList.contains("facet-name")
-         || el.classList.contains("collapsed-icon")) {
-       toggleCollapsed()
-     } else if (el.classList.contains("show-more")) {
-       toggleShowMore()
-     } else if (el.classList.contains("facet-value")) {
-       const {facet, value} = el.dataset
-       toggleFacetValueSelection(facet, value)
-     } else if (el.parentElement.classList.contains("facet-value")) {
-       const {facet, value} = el.parentElement.dataset
-       toggleFacetValueSelection(facet, value)
-     }
-   })
+    * if (moreRowEls.length === 0) {
+    *   // There are no hidden rows, so remove the more/fewer element entirely.
+    *   moreOrFewerEl.remove()
+    * } else {
+    *   // Hide the extra rows.
+    *   toggleShowMore()
+    * }
 
-   return facetEl
+    * // Define a function to toggle the collapsed/expanded row state.
+    * let collapsed = false
+    * const collapsedIconEl = facetEl.querySelector(".collapsed-icon")
+    * const toggleCollapsed = () => {
+    *   if (!collapsed) {
+    *     // Hide all the rows.
+    *     rowEls.forEach(el => el.style.display = "none")
+    *     moreOrFewerEl.style.display = "none"
+    *   } else {
+    *     // Iterate through the facet value rows, setting visibility based on
+    *     // whether there are normally hidden rows and, if so, the state of
+    *     // show more/less.
+    *     rowEls.forEach((el, i) => {
+    *       if (moreRowEls.length === 0 ||
+    *           (!showMore || i < MAX_NUM_VISIBLE_FACET_VALUES)) {
+    *         el.style.display = "flex"
+    *       }
+    *     })
+    *     moreOrFewerEl.style.display = "block"
+    *   }
+
+    *   collapsedIconEl.innerText = collapsed ? "-" : "+"
+    *   collapsed = !collapsed
+    * }
+
+    * // Add a single facet element click handler.
+    * facetEl.addEventListener("click", e => {
+    *   const el = e.target
+    *   if (el.classList.contains("facet-name")
+    *       || el.classList.contains("collapsed-icon")) {
+    *     toggleCollapsed()
+    *   } else if (el.classList.contains("show-more")) {
+    *     toggleShowMore()
+    *   } else if (el.classList.contains("facet-value")) {
+    *     const {facet, value} = el.dataset
+    *     toggleFacetValueSelection(facet, value)
+    *   } else if (el.parentElement.classList.contains("facet-value")) {
+    *     const {facet, value} = el.parentElement.dataset
+    *     toggleFacetValueSelection(facet, value)
+    *   }
+    * })
+    */
+
+   return searchFacetEl
  }
 
  function clearFacetValueSelections () {
@@ -858,31 +868,33 @@
      ]
    )
 
-   // Modify the style of the first facet value (i.e. the current
-   // collection's name) to appear selected but untoggleable and
-   // define a click handler for the second link (i.e. the summary
-   // of how many other collections are available to search) that
-   // redirects the current search to the multi-collection search page.
-   const [ collectionEl, multiCollectionEl ] = el.querySelectorAll(".facet-value")
-   // Modify the current collection row style, remove the "x" doc count,
-   // and capture clicks.
-   collectionEl.style.backgroundColor = "#888"
-   collectionEl.style.cursor = "not-allowed"
-   collectionEl.querySelector(".facet-value-doc-count").innerHTML = ""
-   collectionEl.addEventListener("click", e => e.stopPropagation())
-   // Define the click handler to redirect to the multi-collection page.
-   multiCollectionEl.addEventListener("click", e => {
-     e.stopPropagation()
-     // Get any current query search param.
-     const params = new URLSearchParams(location.search)
-     // Set initial search conditions to all available indices / collections.
-     for (let indiceTitle of indicesDirectoryTitleIndexMap.keys()) {
-       params.append("collection[]", indiceTitle)
-     }
-     // Do the redirect.
-     window.location = `{{ site.baseurl }}/multi-collection-search?${params.toString()}`
-   })
-
+   // TODO - reimplment in component
+   /*
+    * // Modify the style of the first facet value (i.e. the current
+    * // collection's name) to appear selected but untoggleable and
+    * // define a click handler for the second link (i.e. the summary
+    * // of how many other collections are available to search) that
+    * // redirects the current search to the multi-collection search page.
+    * const [ collectionEl, multiCollectionEl ] = el.querySelector(".value")
+    * // Modify the current collection row style, remove the "x" doc count,
+    * // and capture clicks.
+    * collectionEl.style.backgroundColor = "#888"
+    * collectionEl.style.cursor = "not-allowed"
+    * collectionEl.querySelector(".facet-value-doc-count").innerHTML = ""
+    * collectionEl.addEventListener("click", e => e.stopPropagation())
+    * // Define the click handler to redirect to the multi-collection page.
+    * multiCollectionEl.addEventListener("click", e => {
+    *   e.stopPropagation()
+    *   // Get any current query search param.
+    *   const params = new URLSearchParams(location.search)
+    *   // Set initial search conditions to all available indices / collections.
+    *   for (let indiceTitle of indicesDirectoryTitleIndexMap.keys()) {
+    *     params.append("collection[]", indiceTitle)
+    *   }
+    *   // Do the redirect.
+    *   window.location = `{{ site.baseurl }}/multi-collection-search?${params.toString()}`
+    * })
+    */
    nonMultiCollectionFacetEl = el
  }
 

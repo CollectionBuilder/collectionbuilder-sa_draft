@@ -1,0 +1,66 @@
+
+/******************************************************************************
+ * Elasticsearch Search Interface Styles
+ *****************************************************************************/
+
+// Facets
+
+search-facet .wrapper {
+  font-size: .8em;
+  border: solid #343a40 1px;
+  border-radius: .25rem;
+  overflow: hidden;
+  margin-bottom: 2em;
+  width: 28em;
+}
+
+search-facet .name {
+  font-size: inherit;
+  background-color: #343a40;
+  color: #ccc;
+  padding: .5em;
+  font-weight: bold;
+  margin-bottom: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+}
+
+search-facet .collapsed-icon {
+  font-weight: bold;
+  color: #ccc;
+  font-family: monospace;
+  font-size: 1.4em;
+  margin-left: auto;
+}
+
+search-facet .show-more {
+  text-align: center;
+  font-size: 1em;
+  background-color: #f4f4f4;
+  color: #888;
+  padding: .1em 0;
+  cursor: pointer;
+}
+
+search-facet .value {
+  white-space: nowrap;
+  padding: .2em .5em;
+  border-top: solid #eee 1px;
+  position: relative;
+  cursor: pointer;
+  color: #444;
+  background-color: #fff;
+  display: flex;
+}
+
+search-facet .value-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 1em;
+}
+
+search-facet .value-doc-count {
+  margin-left: auto;
+}
