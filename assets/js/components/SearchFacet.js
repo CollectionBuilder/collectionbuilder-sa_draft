@@ -10,16 +10,11 @@ export class SearchFacetValue extends HTMLElement {
   constructor () {
     super()
 
-    // Create the inner component element.
-    const el = createElement(
-      `<div class="value">
-         <span class="value-name"></span>
-         <span class="value-doc-count"></span>
-       </div>`
-    )
-
-    // Append the inner element to the component.
-    this.appendChild(el)
+    // Define the component's inner structure.
+    this.innerHTML =
+      `<span class="name"></span>
+       <span class="doc-count"></span>
+      `
   }
 
   connectedCallback () {
@@ -28,13 +23,23 @@ export class SearchFacetValue extends HTMLElement {
     const docCount = this.getAttribute("doc-count")
 
     // Update the component with the attribute values.
-    this.querySelector(".value-name").textContent = name
-    this.querySelector(".value-doc-count").textContent = docCount
+    this.querySelector(".name").textContent = name
+    this.querySelector(".doc-count").textContent = docCount
   }
 }
 
 // Add this component to the custom elements registry.
 customElements.define("search-facet-value", SearchFacetValue)
+
+
+
+/******************************************************************************
+* Search Facet Values Component
+******************************************************************************/
+
+class SearchFacetValues extends HTMLElement {}
+
+customElements.define("search-facet-values", SearchFacetValues)
 
 
 /******************************************************************************
@@ -45,21 +50,24 @@ export class SearchFacet extends HTMLElement {
   constructor () {
     super()
 
-    // Create the inner component element.
-    const el = createElement(
-      `<div class="wrapper">
-         <h1 class="name">
-          <span class="collapsed-icon">-</span>
-        </h1>
-        <div class="values"></div>
-        <div class="show-more">
-          show fewer
-        </div>
-      </div>`
-    )
+    // Grab the <search-facet-values> element so that we can later manually
+    // place it into its <slot>. Note that this would happen automatically if
+    // we were using a shadow DOM.
+    const searchFacetValuesEl = this.querySelector("search-facet-values")
 
-    // Append the inner element to the component.
-    this.appendChild(el)
+    // Define the component's inner structure.
+    this.innerHTML =
+      `<h1 class="name">
+         <span class="collapsed-icon">-</span>
+       </h1>
+       <!-- Define a slot for <search-facet-values> element -->
+       <slot></slot>
+       <div class="show-more">
+         show fewer
+       </div>`
+
+    // Insert the <search-facet-values> element into its slot.
+    this.querySelector("slot").replaceWith(searchFacetValuesEl)
   }
 
   connectedCallback () {
@@ -67,20 +75,12 @@ export class SearchFacet extends HTMLElement {
     const name = this.getAttribute("name")
 
     // Update the component with the attribute values.
-    this.querySelector('.name').insertBefore(
+    this.querySelector('h1.name').insertBefore(
       document.createTextNode(name),
-      this.querySelector('.collapsed-icon')
-    )
-
-    // Move all the <search-facet-value> elements into the values div.
-    // Normally we'd use <slot> for this but can't because we're not using a
-    // shadow DOM.
-    const valuesEl = this.querySelector(".values")
-    this.querySelectorAll("search-facet-value").forEach(
-      el => valuesEl.appendChild(el)
+      this.querySelector('h1 > span.collapsed-icon')
     )
   }
 }
 
-// Add this component to the custom elements registry.c
+// Add this component to the custom elements registry.
 customElements.define("search-facet", SearchFacet)

@@ -355,7 +355,9 @@
    // Create a SearchFacet component.
    const searchFacetEl = createElement(
      `<search-facet name="${facetName}">
-        ${buckets.map(bucketToSearchFacetValueStr).join("")}
+        <search-facet-values>
+          ${buckets.map(bucketToSearchFacetValueStr).join("")}
+        </search-facet-values>
       </search-facet>`
    )
 

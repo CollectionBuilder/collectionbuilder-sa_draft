@@ -5,7 +5,8 @@
 
 // Facets
 
-search-facet .wrapper {
+search-facet {
+  display: block;
   font-size: .8em;
   border: solid #343a40 1px;
   border-radius: .25rem;
@@ -14,7 +15,7 @@ search-facet .wrapper {
   width: 28em;
 }
 
-search-facet .name {
+search-facet h1.name {
   font-size: inherit;
   background-color: #343a40;
   color: #ccc;
@@ -43,7 +44,11 @@ search-facet .show-more {
   cursor: pointer;
 }
 
-search-facet .value {
+search-facet-values {
+  display: block;
+}
+
+search-facet-value {
   white-space: nowrap;
   padding: .2em .5em;
   border-top: solid #eee 1px;
@@ -54,13 +59,17 @@ search-facet .value {
   display: flex;
 }
 
-search-facet .value-name {
+search-facet-value:hover {
+  background-color: #eee;
+}
+
+search-facet-value .name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   padding-right: 1em;
 }
 
-search-facet .value-doc-count {
+search-facet-value .doc-count {
   margin-left: auto;
 }
