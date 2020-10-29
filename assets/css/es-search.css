@@ -3,23 +3,21 @@
  * Elasticsearch Search Interface Styles
  *****************************************************************************/
 
-// Facets
-
 search-facet {
   display: block;
-  font-size: .8em;
+  font-size: 1rem;
   border: solid #343a40 1px;
   border-radius: .25rem;
   overflow: hidden;
-  margin-bottom: 2em;
-  width: 28em;
+  margin-bottom: 2rem;
+  width: 28rem;
 }
 
 search-facet h1.name {
   font-size: inherit;
   background-color: #343a40;
   color: #ccc;
-  padding: .5em;
+  padding: .5rem;
   font-weight: bold;
   margin-bottom: 0;
   cursor: pointer;
@@ -31,16 +29,16 @@ search-facet .collapsed-icon {
   font-weight: bold;
   color: #ccc;
   font-family: monospace;
-  font-size: 1.4em;
+  font-size: 1.4rem;
   margin-left: auto;
 }
 
 search-facet .show-more {
   text-align: center;
-  font-size: 1em;
+  font-size: 1rem;
   background-color: #f4f4f4;
   color: #888;
-  padding: .1em 0;
+  padding: .1rem 0;
   cursor: pointer;
 }
 
@@ -50,7 +48,7 @@ search-facet-values {
 
 search-facet-value {
   white-space: nowrap;
-  padding: .2em .5em;
+  padding: .2rem .5rem;
   border-top: solid #eee 1px;
   position: relative;
   cursor: pointer;
@@ -60,14 +58,14 @@ search-facet-value {
 }
 
 search-facet-value:hover {
-  background-color: #eee;
+  background-color: #f0f0f0;
 }
 
 search-facet-value .name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 1em;
+  padding-right: 1rem;
 }
 
 search-facet-value .doc-count {

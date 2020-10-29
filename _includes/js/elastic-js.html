@@ -347,10 +347,11 @@
      facetName = snakeToTitleCase(facetName)
    }
 
-   // Define a helper that will create an HTML search-facet-value element string from
-   // a search response aggregation bucket.
+   // Define a helper that will create an HTML search-facet-value element
+   // string from a search response aggregation bucket.
    const bucketToSearchFacetValueStr = ({ key, doc_count }) =>
-     `<search-facet-value value="${key}" doc-count="${doc_count}"></search-facet-value>`
+     `<search-facet-value value="${key}" doc-count="${doc_count}">
+      </search-facet-value>`
 
    // Create a SearchFacet component.
    const searchFacetEl = createElement(

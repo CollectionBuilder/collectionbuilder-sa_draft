@@ -75,65 +75,6 @@
   </button>
 </template>
 
-<template id="facet">
-  <div style="font-size: .8em;
-              border: solid #343a40 1px;
-              border-radius: .25rem;
-              overflow: hidden;
-              margin-bottom: 2em;
-              width: 28em;">
-    <h1 class="facet-name"
-        style="font-size: inherit;
-               background-color: #343a40;
-               color: #ccc;
-               padding: .5em;
-               font-weight: bold;
-               margin-bottom: 0;
-               cursor: pointer;
-               white-space: nowrap;
-               display: flex;">
-      <span class="collapsed-icon"
-            style="font-weight: bold;
-                   color: #ccc;
-                   font-family: monospace;
-                   font-size: 1.4em;
-                   margin-left: auto;">
-        -
-      </span>
-    </h1>
-    <div class="facet-values"></div>
-    <div class="show-more"
-         style="text-align: center;
-                font-size: 1em;
-                background-color: #f4f4f4;
-                color: #888;
-                padding: .1em 0;
-                cursor: pointer;">
-      show fewer
-    </div>
-  </div>
-</template>
-
-<template id="facet-value">
-  <div class="facet-value"
-       style="white-space: nowrap;
-              padding: .2em .5em;
-              border-top: solid #eee 1px;
-              position: relative;
-              cursor: pointer;
-              color: #444;
-              background-color: #fff;
-              display: flex;">
-    <span class="facet-value-name"
-          style="white-space: nowrap;
-                 overflow: hidden;
-                 text-overflow: ellipsis;
-                 padding-right: 1em;">
-    </span>
-    <span class="facet-value-doc-count" style="margin-left: auto;"></span>
-  </div>
-</template>
-
 <template id="result">
   <tr>
     <td style="display: flex;">
