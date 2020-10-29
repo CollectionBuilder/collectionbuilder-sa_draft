@@ -176,6 +176,10 @@ export class SearchFacet extends HTMLElement {
     // Toggle the state variable.
     this.collapsed = !this.collapsed
 
+    // Update the collapsed icon.
+    this.querySelector('h1 > span.collapsed-icon').textContent =
+      this.collapsed ? "+" : "-"
+
     // Update the search facet values display.
     // Note the assumption that both search-facet-values element has a default
     // display value of "block".
