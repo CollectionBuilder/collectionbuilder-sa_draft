@@ -1,9 +1,18 @@
+/*
+   Search Facet Components
 
-import { createElement } from "../helpers.js"
+   These components are used to implement the faceting interface on the
+   Elasticsearch search page.
+
+   The styles for these components are defined in: .../assets/css/es-search.css
+*/
 
 
 /******************************************************************************
 * Search Facet Value Component
+*
+* This component is used to implement a single facet value.
+*
 ******************************************************************************/
 
 export class SearchFacetValue extends HTMLElement {
@@ -21,10 +30,21 @@ export class SearchFacetValue extends HTMLElement {
     // Read the custom element attributes.
     const name = this.getAttribute("value")
     const docCount = this.getAttribute("doc-count")
+    const selected = this.hasAttribute("selected")
 
-    // Update the component with the attribute values.
-    this.querySelector(".name").textContent = name
-    this.querySelector(".doc-count").textContent = docCount
+    // Update the name element.
+    const nameEl = this.querySelector(".name")
+    nameEl.textContent = name
+    // Set the title attribute to show untruncated value on hover.
+    nameEl.setAttribute("title", name)
+
+    // Update the doc-count element.
+    this.querySelector(".doc-count").textContent = selected ? "x" : docCount
+
+    // Maybe add the "selected" class.
+    if (selected) {
+      this.classList.add("selected")
+    }
   }
 }
 
@@ -32,23 +52,93 @@ export class SearchFacetValue extends HTMLElement {
 customElements.define("search-facet-value", SearchFacetValue)
 
 
-
 /******************************************************************************
 * Search Facet Values Component
+*
+* This component is used to contain a list of <facet-value> elements.
+*
 ******************************************************************************/
 
-class SearchFacetValues extends HTMLElement {}
+class SearchFacetValues extends HTMLElement {
+  constructor () {
+    super()
+
+    // Set an initial value for how many values to show by default.
+    this.defaultNumVisible = 5
+
+    // Define a flag to indicate whether we should show all the values.
+    this.showAll = false
+
+    // Append the show-more/fewer element.
+    this.innerHTML +=
+      `<div class="show-more">
+         show more
+       </div>`
+  }
+
+  connectedCallback () {
+    // Read any specified default-num-visible attribute.
+    if (this.hasAttribute("default-num-visible")) {
+      this.defaultNumVisible = parseInt(
+        this.getAttribute("default-num-visible")
+      )
+    }
+
+    // Collect the slice of <search-facet-value> elements whose visibility we
+    // need to control.
+    this.valueElsSlice =
+      Array.from(this.querySelectorAll("search-facet-value"))
+           .slice(this.defaultNumVisible)
+
+    // If the number of values exceeds defaultNumVisible, register the
+    // show-more/fewer click handler, otherwise hide the element.
+    const showMoreEl = this.querySelector(".show-more")
+    if (this.valueElsSlice.length > 0) {
+      showMoreEl.addEventListener("click", this.toggleShowAll.bind(this))
+    } else {
+      showMoreEl.style.display = "none"
+    }
+
+    // Call the showAll change handler to ensure that the visible state is in
+    // sync with the current this.showAll value.
+    this.showAllChangeHandler()
+  }
+
+  showAllChangeHandler () {
+    // Set the .show-more element's text content.
+    this.querySelector(".show-more").textContent =
+      this.showAll ? "show fewer" : "show more"
+
+    // Show/hide the value elements in the non-default slice.
+    const display = this.showAll ? "flex" : "none"
+    this.valueElsSlice.forEach(el => el.style.display = display)
+  }
+
+  toggleShowAll () {
+    // Toggle the state variable.
+    this.showAll = !this.showAll
+
+    // Call the showAll update change handler.
+    this.showAllChangeHandler()
+  }
+}
 
 customElements.define("search-facet-values", SearchFacetValues)
 
 
 /******************************************************************************
 * Search Facet Component
+*
+* This component is used to implement a single facet.
+*
 ******************************************************************************/
 
 export class SearchFacet extends HTMLElement {
   constructor () {
     super()
+
+    // Define a flag to indicate whether the facet values are collapsed.
+    this.collapsed = false
 
     // Grab the <search-facet-values> element so that we can later manually
     // place it into its <slot>. Note that this would happen automatically if
@@ -61,10 +151,7 @@ export class SearchFacet extends HTMLElement {
          <span class="collapsed-icon">-</span>
        </h1>
        <!-- Define a slot for <search-facet-values> element -->
-       <slot></slot>
-       <div class="show-more">
-         show fewer
-       </div>`
+       <slot></slot>`
 
     // Insert the <search-facet-values> element into its slot.
     this.querySelector("slot").replaceWith(searchFacetValuesEl)
@@ -79,6 +166,21 @@ export class SearchFacet extends HTMLElement {
       document.createTextNode(name),
       this.querySelector('h1 > span.collapsed-icon')
     )
+
+    // Register the facet header collapse click handler.
+    this.querySelector("h1")
+        .addEventListener("click", this.toggleCollapsed.bind(this))
+  }
+
+  toggleCollapsed () {
+    // Toggle the state variable.
+    this.collapsed = !this.collapsed
+
+    // Update the search facet values display.
+    // Note the assumption that both search-facet-values element has a default
+    // display value of "block".
+    this.querySelector("search-facet-values").style.display =
+      this.collapsed ? "none" : "block"
   }
 }
 

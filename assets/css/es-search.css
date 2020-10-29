@@ -57,8 +57,17 @@ search-facet-value {
   display: flex;
 }
 
+search-facet-value:first-child {
+  border-top: none;
+}
+
 search-facet-value:hover {
   background-color: #f0f0f0;
+}
+
+search-facet-value.selected {
+  background-color: #17a2b8;
+  color: #fff;
 }
 
 search-facet-value .name {

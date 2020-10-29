@@ -3,11 +3,8 @@
 {%- assign displayFields = fields | where: "display","true" -%}
 
 <script type="module">
- // Import the search facet component module to register the custom elements.
- import {
-   SearchFacet,
-   SearchFacetValue
- } from "/assets/js/components/SearchFacet.js"
+ // Import the search facet components module to register the custom elements.
+ import "/assets/js/components/SearchFacet.js"
 
  // Inject the search config data from the liquid template
  // into javascript variables.
@@ -349,8 +346,10 @@
 
    // Define a helper that will create an HTML search-facet-value element
    // string from a search response aggregation bucket.
-   const bucketToSearchFacetValueStr = ({ key, doc_count }) =>
-     `<search-facet-value value="${key}" doc-count="${doc_count}">
+   const bucketToSearchFacetValueStr = ({ key, doc_count, selected }) =>
+     `<search-facet-value value="${key}"
+                          doc-count="${doc_count}"
+                          ${selected ? "selected" : ""}>
       </search-facet-value>`
 
    // Create a SearchFacet component.
@@ -369,11 +368,6 @@
     *   // Set the data-facet/value attributes.
     *   facetValueEl.dataset["facet"] = facetName
     *   facetValueEl.dataset["value"] = bucket.key
-
-    *   // Remove the top border on the first value.
-    *   if (i === 0) {
-    *     facetValueEl.style.borderTop = "none"
-    *   }
 
     *   // Set the properties whose value is dependent on whether
     *   // the facet value is currently selected.
