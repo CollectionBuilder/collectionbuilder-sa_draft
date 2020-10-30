@@ -3,8 +3,10 @@
 {%- assign displayFields = fields | where: "display","true" -%}
 
 <script type="module">
- // Import the search facet components module to register the custom elements.
+ // Import the search facet component modules to register the custom elements.
  import "/assets/js/components/SearchFacet.js"
+ import "/assets/js/components/SearchFacetValues.js"
+ import "/assets/js/components/SearchFacetValue.js"
 
  // Inject the search config data from the liquid template
  // into javascript variables.
