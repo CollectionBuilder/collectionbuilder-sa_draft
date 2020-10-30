@@ -2,7 +2,7 @@
 /******************************************************************************
 * Search Facet Values Component
 *
-* This component is used to contain a list of <facet-value> elements.
+* This component is used to contain a list of <search-facet-value> elements.
 *
 ******************************************************************************/
 

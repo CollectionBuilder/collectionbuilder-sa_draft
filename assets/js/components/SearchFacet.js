@@ -43,6 +43,11 @@ export class SearchFacet extends HTMLElement {
     this.name = this.getAttribute("name")
     this.displayName = this.getAttribute("display-name")
 
+    // If collapsed was specified, collapse the values.
+    if (this.hasAttribute("collapsed")) {
+      this.toggleCollapsed()
+    }
+
     // Update the component with the attribute values.
     this.querySelector("h1 > span.name").textContent = this.displayName
 
@@ -92,6 +97,10 @@ export class SearchFacet extends HTMLElement {
     /* Invoke all registered value click listeners.
      */
     let target = e.target.closest("search-facet-value")
+    // Ignore clicks not inside a <search-facet-value>.
+    if (target === null) {
+      return
+    }
     const value = target.getAttribute("value")
     for (let fn of this.valueClickListeners) {
       fn(this.name, value)

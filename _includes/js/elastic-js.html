@@ -3,10 +3,20 @@
 {%- assign displayFields = fields | where: "display","true" -%}
 
 <script type="module">
- // Import the search facet component modules to register the custom elements.
+ import SearchFacets from "/assets/js/components/SearchFacets.js"
+
  import "/assets/js/components/SearchFacet.js"
  import "/assets/js/components/SearchFacetValues.js"
  import "/assets/js/components/SearchFacetValue.js"
+
+ import {
+   createElement,
+   snakeToTitleCase,
+   clone,
+   removeChildren,
+   updateUrlSearchParams,
+ } from "/assets/js/helpers.js"
+
 
  // Inject the search config data from the liquid template
  // into javascript variables.
@@ -30,7 +40,7 @@
 
  const INDEX_NAME = "{{ site.elasticsearch-index }}"
  const ES_SEARCH_URL_TEMPLATE = indices => `{{ site.elasticsearch-protocol }}://{{ site.elasticsearch-host }}:{{ site.elasticsearch-port }}/${indices.join(",")}/_search`
-  const ES_DIRECTORY_URL = "{{ site.elasticsearch-protocol }}://{{ site.elasticsearch-host }}:{{ site.elasticsearch-port }}/directory_/_search"
+ const ES_DIRECTORY_URL = "{{ site.elasticsearch-protocol }}://{{ site.elasticsearch-host }}:{{ site.elasticsearch-port }}/directory_/_search"
 
  // Define the maximum number of facet values to show by default.
  const MAX_NUM_VISIBLE_FACET_VALUES = 5
@@ -181,7 +191,7 @@
  }
 
 
-  async function executeQuery (indices, query) {
+ async function executeQuery (indices, query) {
    /* Perform the search and return the response, or return null if something
       goes wrong (e.g. server not reachable, response not JSON, etc.)
     */
@@ -271,38 +281,20 @@
 
 
  //////////////////////////////////////////////////////////////////////////////
- // Utility Functions
+ // Facet Rendering
  //////////////////////////////////////////////////////////////////////////////
 
- // Convert snake-case string to a Title String.
- const snakeToTitleCase = s =>
-   s.split("_")
-    .map(s=> s[0].toUpperCase() + s.slice(1))
-    .join(" ")
 
- const clone = tmplEl => tmplEl.content.cloneNode(true).children[0]
-
- const removeChildren = el => Array.from(el.children).forEach(x => x.remove())
-
- function createElement (domString) {
-   // Return an HTML element object for the given DOM string.
-   const wrapper = document.createElement("div")
-   wrapper.innerHTML = domString.trim()
-   const el = wrapper.firstChild
-   wrapper.removeChild(el)
+ function ClearFiltersElement (numApplied) {
+   // Clone the facet template element.
+   const el = clone(document.getElementById("clear-filters"))
+   // Replace the numApplied placeholder with the actual value.
+   el.textContent = el.textContent.replace("{numApplied}", `${numApplied}`)
+   // Add a click handler that will clear all applied filters.
+   el.addEventListener("click", () => clearFacetValueSelections())
    return el
  }
 
- function updateUrlSearchParams(searchParams) {
-   const url = new URL(location.href)
-   url.search = searchParams
-   history.pushState(null, document.title, url)
- }
-
-
- //////////////////////////////////////////////////////////////////////////////
- // Facet Rendering
- //////////////////////////////////////////////////////////////////////////////
 
  function toggleFacetValueSelection (name, value) {
    const params = new URLSearchParams(location.search)
@@ -324,109 +316,68 @@
    search(getSearchParams())
  }
 
- const getSelectedFacetVals = name =>
-   new URLSearchParams(location.search).getAll(`${name}[]`)
 
- function FacetElement (facetName, buckets) {
-   // Sort the value by the order in which they were applied, as indicated
-   // by the search URL params.
-   const selectedFacetVals = getSelectedFacetVals(facetName).reverse()
-   buckets.sort(
-     (a, b) => selectedFacetVals.indexOf(b.key) - selectedFacetVals.indexOf(a.key)
-   )
-
-   // Special-case the collection facet to have a more descriptive title.
-   let facetDisplayName
-   if (facetName === "collection" && IS_MULTI_SEARCH) {
-     facetDisplayName = "Include results from:"
-   } else {
-     facetDisplayName = snakeToTitleCase(facetName)
-   }
-
-   // Define a helper that will create an HTML search-facet-value element
-   // string from a search response aggregation bucket.
-   const bucketToSearchFacetValueStr = ({ key, doc_count, selected }) =>
-     `<search-facet-value value="${key}"
-                          doc-count="${doc_count}"
-                          ${selected ? "selected" : ""}>
-      </search-facet-value>`
-
-   // Create the SearchFacet component.
-   const searchFacetEl = createElement(
-     `<search-facet name="${facetName}" display-name="${facetDisplayName}">
-        <search-facet-values initial-num-visible="5">
-          ${buckets.map(bucketToSearchFacetValueStr).join("")}
+ function MultiCallToActionFacetEl () {
+   /* Return a SearchFacet variant to serve as a multi-collection-search
+      call-to-action.
+    */
+   const el = createElement(
+     `<search-facet name="" display-name="Additional Collections" collapsed>
+        <search-facet-values>
+          <search-facet-value value="Search ${indicesDirectory.length} additional collections from {{ site.organization-name }}" doc-count=""></search-facet-value>
         </search-facet-values>
       </search-facet>`
    )
 
-   // Register the facet value click listener.
-   searchFacetEl.addValueClickListener(toggleFacetValueSelection)
+   const facetValueEl = el.querySelector("search-facet-value")
+   const nameEl =  facetValueEl.querySelector(".name")
+   nameEl.style.overflow = "visible"
+   nameEl.style.whiteSpace = "normal"
 
-   return searchFacetEl
- }
+   // Define the click handler to redirect to the multi-collection page.
+   facetValueEl.addEventListener("click", e => {
+     e.stopPropagation()
+     // Get any current query search param.
+     const params = new URLSearchParams(location.search)
+     // Set initial search conditions to all available indices / collections.
+     for (let indiceTitle of indicesDirectoryTitleIndexMap.keys()) {
+       params.append("collection[]", indiceTitle)
+     }
+     // Do the redirect.
+     window.location = `{{ site.baseurl }}/multi-collection-search?${params.toString()}`
+   })
 
- function clearFacetValueSelections () {
-   // Remove all applied facets/filters from the URL search params and execute
-   // the new search.
-   const params = new URLSearchParams(location.search)
-   FACETED_FIELD_NAMES.forEach(fieldName => params.delete(`${fieldName}[]`))
-   // Delete collection[] and start if present.
-   params.delete("collection[]")
-   params.delete("start")
-   updateUrlSearchParams(params)
-   search(getSearchParams())
- }
-
- function ClearFiltersElement (numApplied) {
-   // Clone the facet template element.
-   const el = clone(document.getElementById("clear-filters"))
-   // Replace the numApplied placeholder with the actual value.
-   el.textContent = el.textContent.replace("{numApplied}", `${numApplied}`)
-   // Add a click handler that will clear all applied filters.
-   el.addEventListener("click", () => clearFacetValueSelections())
    return el
  }
 
 
  function renderFacets (aggregations) {
-   // Render the facet elements for the specified Elasticsearch aggregation
-   // results.
-   const facetsEl = document.querySelector("#facets")
+   // Get the facets container element and remove any current childeren.
+   const facetsEl = document.getElementById("facets")
    removeChildren(facetsEl)
 
-   // Maybe include the collection facet.
-   if (indicesDirectory.length > 1 && !IS_MULTI_SEARCH) {
-     facetsEl.appendChild(multiCollectionCallToActionFacetElement())
-   }
-
+   // Get the ordered array of facet names.
    let fieldNames = FACETED_FIELD_NAMES
+
+   // If this is the multi-search page, include a collection facet.
    if (IS_MULTI_SEARCH) {
      fieldNames = [ "collection" ].concat(fieldNames)
    }
 
-   let numSelected = 0
-   for (let facet of fieldNames) {
-     let aggregation = aggregations[facet]
-     if (aggregation && aggregation.buckets.length > 0) {
-       // Get the selected values for this facet as specified in the URL
-       // and add a selected flag to those buckets.
-       const selectedVals = getSelectedFacetVals(facet)
-       // Update the anySelected flag.
-       numSelected += selectedVals.length
-       aggregation.buckets.forEach(bucket => {
-         bucket.selected = selectedVals.includes(bucket.key)
-       })
-       facetsEl.appendChild(FacetElement(facet, aggregation.buckets))
-     }
+   // Create the SearchFacets component.
+   const searchFacetsEl = new SearchFacets(aggregations, fieldNames)
+
+   // Add a multi-collection-search call-to-action facet if this is a collection-specific
+   // search page and there are multiple indices available.
+   if (!IS_MULTI_SEARCH && indicesDirectory.length > 1) {
+     searchFacetsEl.appendChild(MultiCallToActionFacetEl())
    }
 
-   // If any facet values are selected, display the clear-filters buttons.
-   const clearFiltersWrapperEl = document.querySelector(".clear-filters")
-   removeChildren(clearFiltersWrapperEl)
-   if (numSelected > 0) {
-     clearFiltersWrapperEl.appendChild(ClearFiltersElement(numSelected))
-   }
+   // Register the facet value click handler.
+   searchFacetsEl.addValueClickListener(toggleFacetValueSelection)
+
+   // Append the SearchFacets element to the facets container.
+   facetsEl.appendChild(searchFacetsEl)
  }
 
 
@@ -451,8 +402,8 @@
    el.querySelector(".num-hits").textContent =
      `Showing ${startIdx} - ${endIdx} of ${numHits}`
 
-   // Set the size selector value.
-   const sizeEl = el.querySelector('select')
+     // Set the size selector value.
+     const sizeEl = el.querySelector('select')
    // If the query specifies a non-standard size, add it as an option.
    if (sizeEl.querySelector(`option[value="${paging.size}"]`) === null) {
      sizeEl.appendChild(
@@ -736,62 +687,6 @@
    hideAdvancedSearchOptions()
  }
 
- function multiCollectionCallToActionFacetElement () {
-   /* Return a FacetElement variant that serves as a call-to-action for
-      searching across multi available collections.
-    */
-
-   // Instantiate a normal FacetElement.
-   const el = FacetElement(
-     "collection",
-     [
-       {key: "{{ site.title }}",
-        selected: false,
-       },
-       {key: `Search ${indicesDirectory.length} additional collections from <br>{{ site.organization-name }}`,
-        selected: false,
-       },
-     ]
-   )
-
-   // Get the current-collection and multi-collection-message facet value
-   // elements.
-   const [ collectionEl, multiCollectionEl ] =
-     el.querySelectorAll("search-facet-value")
-
-   // Modify the current collection value row to:
-   //  - have a grayed-out background
-   //  - display a not-allowed cursor
-   //  - remove the doc count
-   //  - ignore clicks
-   collectionEl.style.backgroundColor = "#ccc"
-   collectionEl.style.cursor = "not-allowed"
-   collectionEl.setAttribute("doc-count", "")
-   collectionEl.addEventListener("click", e => e.stopPropagation())
-
-   // Modify the multi-collection message value row to:
-   //  - remove the doc count
-   //  - not truncate the message
-   multiCollectionEl.setAttribute("doc-count", "")
-   multiCollectionEl.querySelector(".name").style.overflow = "visible"
-   multiCollectionEl.querySelector(".name").style.whiteSpace = "normal"
-
-   // Define the click handler to redirect to the multi-collection page.
-   multiCollectionEl.addEventListener("click", e => {
-     e.stopPropagation()
-     // Get any current query search param.
-     const params = new URLSearchParams(location.search)
-     // Set initial search conditions to all available indices / collections.
-     for (let indiceTitle of indicesDirectoryTitleIndexMap.keys()) {
-       params.append("collection[]", indiceTitle)
-     }
-     // Do the redirect.
-     window.location = `{{ site.baseurl }}/multi-collection-search?${params.toString()}`
-   })
-
-   return el
- }
-
  async function initIndicesDirectoryInfo () {
    // Get a list of the indices that are available on this Elasticsearch server
    // and save it to the global indicesDirectory variable.
@@ -831,11 +726,11 @@
 
    // Add advanced search options toggle listener.
    document.querySelector("#advanced-search > button")
-     .addEventListener("click", toggleAdvancedSearchOptionsVisibility)
+                            .addEventListener("click", toggleAdvancedSearchOptionsVisibility)
 
    // Add advanced search fields toggle listener.
    document.getElementById("include-fields-toggle")
-     .addEventListener("change", toggleAdvancedSearchFields.bind(searchEl))
+                            .addEventListener("change", toggleAdvancedSearchFields.bind(searchEl))
 
    window.addEventListener("popstate", () => {
      search(getSearchParams())
