@@ -80,3 +80,18 @@ search-facet-value .name {
 search-facet-value .doc-count {
   margin-left: auto;
 }
+
+clear-filters {
+  display: block;
+  text-align: center;
+  font-size: .8em;
+  border: 1px solid #ced4da;
+  border-radius: .25rem;
+  width: 100%;
+  margin-bottom: 2em;
+  background-color: #f4f4f4;
+  color: #444;
+  padding: .2em;
+  cursor: pointer;
+  white-space: nowrap;
+}

@@ -9,11 +9,13 @@
  import "/assets/js/components/SearchFacetValues.js"
  import "/assets/js/components/SearchFacetValue.js"
 
+ import { TOPICS, subscribe } from "/assets/js/pubSub.js"
  import {
    createElement,
    snakeToTitleCase,
    clone,
    removeChildren,
+   getUrlSearchParams,
    updateUrlSearchParams,
  } from "/assets/js/helpers.js"
 
@@ -283,18 +285,6 @@
  //////////////////////////////////////////////////////////////////////////////
  // Facet Rendering
  //////////////////////////////////////////////////////////////////////////////
-
-
- function ClearFiltersElement (numApplied) {
-   // Clone the facet template element.
-   const el = clone(document.getElementById("clear-filters"))
-   // Replace the numApplied placeholder with the actual value.
-   el.textContent = el.textContent.replace("{numApplied}", `${numApplied}`)
-   // Add a click handler that will clear all applied filters.
-   el.addEventListener("click", () => clearFacetValueSelections())
-   return el
- }
-
 
  function toggleFacetValueSelection (name, value) {
    const params = new URLSearchParams(location.search)
@@ -609,26 +599,18 @@
  }
 
  function getSearchParams () {
-   // Parse the URL search params, collecting array-type values into actual
-   // arrays and return the resulting <key> -> <value(s)> map.
-   const params = new Map()
-   const searchParams = new URLSearchParams(location.search)
-   for (let [k, v] of searchParams.entries()) {
-     const isArray = k.endsWith("[]")
-     if (!params.has(k)) {
-       params.set(k, isArray ? [v] : v)
-     } else if (isArray) {
-       params.get(k).push(v)
-     } else {
-       console.warn(`Duplicate search key "${k}" does not end with "[]"`)
-     }
-   }
-   // Split the comma-separated "fields" value.
+   // Wrapper for getUrlSearchParams that also splits the comma-separated "fields" value.
+   const params = getUrlSearchParams()
    if (params.has("fields")) {
      params.set("fields", params.get("fields").split(","))
    }
    return params
  }
+
+ // Subscribe an URL_SEARCH_PARAMS_UPDATED topic handler that executes a new search.
+ subscribe(TOPICS.URL_SEARCH_PARAMS_UPDATED, () => {
+   search(getSearchParams())
+ })
 
  function toggleAdvancedSearchOptionsVisibility () {
    // Show / hide the advanced search options element.
