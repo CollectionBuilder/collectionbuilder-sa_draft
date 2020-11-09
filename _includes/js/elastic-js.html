@@ -651,17 +651,34 @@
  function searchFormSubmitHandler (e) {
    // Prevent the default submission behavior.
    e.preventDefault()
+
    // Get the form data.
-   const formData = new FormData(e.target)
+   const formEl = e.target
+   const formData = new FormData(formEl)
+
+   // Get the query string.
    const q = formData.get("q")
-   const fields = formData.getAll("fields[]")
+
+   // Get all of the selected field checkbox values.
+   const selectedFieldNames = formData.getAll("fields[]")
 
    // Hack to fix a bug for the demo where a new search using the
    // embeddd input doesn't update the URL.
    const url = new URL(location.href)
    const urlSearchParams = new URLSearchParams(url.search)
    urlSearchParams.set("q", q)
-   urlSearchParams.set("fields", fields.join(","))
+
+   // Get the number of selected and total fields.
+   const numSelectedFields = selectedFieldNames.length
+   const numTotalFields = formEl.querySelectorAll('input[name="fields[]"]').length
+
+   // If all or none of the fields are selected, delete the `fields` param,
+   // otherwise add it.
+   if (numSelectedFields === 0 || numSelectedFields === numTotalFields) {
+     urlSearchParams.delete("fields")
+   } else {
+     urlSearchParams.set("fields", selectedFieldNames.join(","))
+   }
 
    updateUrlSearchParams(urlSearchParams)
    search(getSearchParams())
