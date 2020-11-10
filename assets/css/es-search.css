@@ -10,7 +10,7 @@ search-facet {
   border-radius: .25rem;
   overflow: hidden;
   margin-bottom: 2rem;
-  width: 28rem;
+  width: 100%;
 }
 
 search-facet h1.name {
@@ -94,4 +94,18 @@ clear-filters {
   padding: .2em;
   cursor: pointer;
   white-space: nowrap;
+}
+
+search-result {
+  display: flex;
+  border-top: 1px solid #dee2e6;
+  padding: .75rem;
+}
+
+search-result:first-child {
+  border-top: none;
+}
+
+search-result img {
+  width: 100px;
 }

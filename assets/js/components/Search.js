@@ -1,5 +1,8 @@
 
+import "./ClearFilters.js"
+
 import SearchFacets from "./SearchFacets.js"
+import SearchResults from "./SearchResults.js"
 
 import {
   buildQuery,
@@ -26,8 +29,10 @@ export class Search extends HTMLElement {
       `
       <div class="container">
         <div class="row">
-          <div class="col facets"></div>
-          <div class="col results">
+          <div class="col-4 facets"></div>
+          <div class="col">
+            <clear-filters num-applied="0"></clear-filters>
+            <div class="results">
           </div>
         </div>
       </div>
@@ -87,6 +92,12 @@ export class Search extends HTMLElement {
       this.indicesDirectoryTitleIndexMap.set(title, index)
     }
 
+    // Get the clear filters button element and register its click handler.
+    this.clearFiltersButton = this.querySelector("clear-filters")
+    console.log(this.clearFiltersButton)
+    this.clearFiltersButton
+      .addEventListener("click", this.clearFiltersClickHandler.bind(this))
+
     // Execute the initial search.
     this.search()
   }
@@ -136,11 +147,14 @@ export class Search extends HTMLElement {
 
     // Use the remaining searchParams entries to build the filters list.
     let filters = new Map()
+    // Count the total number of applied filter values.
+    let numAppliedFilters = 0
     for (let [ k, v ] of searchParams.entries()) {
       const isArray = k.endsWith("[]")
       let name = `${isArray ? k.slice(0, k.length - 2) : k}.raw`
       let values = isArray ? v : [v]
       filters.set(name, values)
+      numAppliedFilters += values.length
     }
 
     // Define the aggregations.
@@ -187,8 +201,14 @@ export class Search extends HTMLElement {
     }
     searchResponse.aggregations.collection = collectionAgg
 
-    // Redraw the facets.
+    // Update the clear filters button.
+    this.clearFiltersButton.setAttribute("num-applied", numAppliedFilters)
+
+    // Render the facets.
     this.renderFacets(searchResponse.aggregations)
+
+    // Render the results.
+    this.renderResults(searchResponse.hits.hits)
   }
 
   async renderFacets (aggregations) {
@@ -219,6 +239,23 @@ export class Search extends HTMLElement {
     searchFacetsContainerEl.appendChild(searchFacets)
   }
 
+  async renderResults (hits) {
+    /* Reinstantiate the SearchResults component with the specified hits.
+     */
+    // Get the results container element and remove any existing <search-results> element.
+    const searchResultsContainerEl = this.querySelector("div.results")
+    let searchResults = searchResultsContainerEl.querySelector("search-results")
+    if (searchResults !== null) {
+      searchResults.remove()
+    }
+
+    // Instantiate the SearchFacets component.
+    searchResults = new SearchResults(hits, this.displayFields)
+
+    // Append the component to the container.
+    searchResultsContainerEl.appendChild(searchResults)
+  }
+
   facetValueClickHandler (name, value) {
     /* Handle a facet value click by updating the URL search params and initiating
        a new search.
@@ -242,6 +279,29 @@ export class Search extends HTMLElement {
     this.search()
   }
 
+  clearFiltersClickHandler (e) {
+    /* Handler a click on the clear-filters button.
+    */
+    e.stopPropagation()
+
+    // Parse the unique list of applied filter keys from the current URL.
+    const params = new URLSearchParams(location.search)
+    const filterKeys = new Set(Array.from(params.keys()).filter(x => x.endsWith("[]")))
+
+    // Delete all filter params.
+    for (const k of filterKeys) {
+      params.delete(k)
+    }
+
+    // Also delete start if present.
+    params.delete("start")
+
+    // Update the URL search params.
+    updateUrlSearchParams(params)
+
+    // Execute a new search.
+    this.search()
+  }
 }
 
 customElements.define("search-app", Search)

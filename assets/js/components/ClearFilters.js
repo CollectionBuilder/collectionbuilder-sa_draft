@@ -1,7 +1,4 @@
 
-import { getUrlSearchParams, updateUrlSearchParams } from "/assets/js/helpers.js"
-import { TOPICS, subscribe } from "/assets/js/pubSub.js"
-
 
 /******************************************************************************
  * Clear Filters Component
@@ -10,52 +7,32 @@ import { TOPICS, subscribe } from "/assets/js/pubSub.js"
  *
  ******************************************************************************/
 
-export default class ClearFilters extends HTMLButtonElement {
+export default class ClearFilters extends HTMLElement {
   connectedCallback () {
-    // Update the button content.
-    this.update(getUrlSearchParams())
-
-    // Register the click handler.
-    this.addEventListener("click", this.clickHandler)
-
-    // Subscribe update() to URL_SEARCH_PARAMS_UPDATED messages.
-    subscribe(TOPICS.URL_SEARCH_PARAMS_UPDATED, this.update.bind(this))
+    // Manually invoke the attributeChangedCallback with the initial num-applied
+    // property value to set the initial component state.
+    this.attributeChangedCallback("num-applied", undefined,
+                                  this.getAttribute("num-applied"))
   }
 
-  update () {
-    // Parse the unique list of applied filter keys from the current URL.
-    const params = new URLSearchParams(location.search)
-    // Determine the number of applied filters.
-    const numApplied = Array.from(params.keys()).filter(x => x.endsWith("[]")).length
+  static get observedAttributes () {
+    // Return the array of properties for which the attributeChangedCallback will
+    // be invoked when modified.
+    return [ "num-applied" ]
+  }
 
-    // If no filters are applied, hide the component, otherwise update the text content
-    // and show it.
+  attributeChangedCallback (name, oldValue, newValue) {
+    /* Handle num-applied property changes by updating the text content and
+       showing / hiding the element.
+    */
+    const numApplied = parseInt(newValue)
+    this.textContent = `Clear ${numApplied} Filters`
     if (numApplied === 0) {
       this.classList.add("d-none")
     } else {
       this.classList.remove("d-none")
-      this.textContent = `Clear ${numApplied} Filters`
     }
-  }
-
-  clickHandler (e) {
-    e.stopPropagation()
-
-    // Parse the unique list of applied filter keys from the current URL.
-    const params = new URLSearchParams(location.search)
-    const filterKeys = new Set(Array.from(params.keys()).filter(x => x.endsWith("[]")))
-
-    // Delete all filter params.
-    for (const k of filterKeys) {
-      params.delete(k)
-    }
-
-    // Also delete start if present.
-    params.delete("start")
-
-    // Update the URL search params.
-    updateUrlSearchParams(params)
   }
 }
 
-customElements.define("clear-filters", ClearFilters, { extends: "button" })
+customElements.define("clear-filters", ClearFilters)
