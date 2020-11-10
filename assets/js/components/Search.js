@@ -31,6 +31,7 @@ export class Search extends HTMLElement {
         <div class="row">
           <div class="col-4 facets"></div>
           <div class="col">
+            <input type="text" class="form-control mb-2" placeholder="Search" aria-label="search box">
             <clear-filters num-applied="0"></clear-filters>
             <div class="results">
           </div>
@@ -38,6 +39,16 @@ export class Search extends HTMLElement {
       </div>
       `
     ))
+
+    this.clearFiltersButton = this.querySelector("clear-filters")
+
+    // Initialize the search input value from the URL search params.
+    this.searchInput = this.querySelector("input[type=text]")
+    const searchParams = getUrlSearchParams()
+    if (searchParams.has("q")) {
+      this.searchInput.value = searchParams.get("q")
+    }
+
   }
 
   async connectedCallback () {
@@ -92,9 +103,10 @@ export class Search extends HTMLElement {
       this.indicesDirectoryTitleIndexMap.set(title, index)
     }
 
-    // Get the clear filters button element and register its click handler.
-    this.clearFiltersButton = this.querySelector("clear-filters")
-    console.log(this.clearFiltersButton)
+    // Register the search input keydown handler.
+    this.searchInput.addEventListener("keydown", this.searchInputKeydownHandler.bind(this))
+
+    // Register the clear filters button click handler.
     this.clearFiltersButton
       .addEventListener("click", this.clearFiltersClickHandler.bind(this))
 
@@ -278,6 +290,26 @@ export class Search extends HTMLElement {
     updateUrlSearchParams(params)
     this.search()
   }
+
+  searchInputKeydownHandler (e) {
+    /* Execute a new search when the user presse the Enter button inside the
+       text input box.
+    */
+    if (e.key !== "Enter") {
+      return
+    }
+    const el = e.target
+    // Blur the input.
+    el.blur()
+    // Update the URL 'q' search param.
+    const q = el.value
+    const params = new URLSearchParams(location.search)
+    params.set("q", q)
+    updateUrlSearchParams(params)
+
+    this.search()
+  }
+
 
   clearFiltersClickHandler (e) {
     /* Handler a click on the clear-filters button.
