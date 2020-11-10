@@ -1,7 +1,4 @@
 
-import { TOPICS, publish } from "./pubSub.js"
-
-
 // Define a subclass of Map that implements a pop() method.
 class PoppableMap extends Map {
   pop (k) {
@@ -60,6 +57,4 @@ export function updateUrlSearchParams(searchParams) {
   url.search = searchParams
   // Use pushState() to update the address bar without reloading the page.
   history.pushState(null, document.title, url)
-  // Announce the update.
-  publish(TOPICS.URL_SEARCH_PARAMS_UPDATED, searchParams)
 }
