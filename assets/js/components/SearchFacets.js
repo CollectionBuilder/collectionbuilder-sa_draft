@@ -20,19 +20,6 @@ import {
 const getSelectedFacetVals = name =>
   new URLSearchParams(location.search).getAll(`${name}[]`)
 
-// TODO
-/* function clearFacetValueSelections () {
- *   // Remove all applied facets/filters from the URL search params and execute
- *   // the new search.
- *   const params = new URLSearchParams(location.search)
- *   FACETED_FIELD_NAMES.forEach(fieldName => params.delete(`${fieldName}[]`))
- *   // Delete collection[] and start if present.
- *   params.delete("collection[]")
- *   params.delete("start")
- *   updateUrlSearchParams(params)
- *   search(getSearchParams())
- * }
- *  */
 
 export default class SearchFacets extends HTMLElement {
   constructor (aggregations, includeKeys) {

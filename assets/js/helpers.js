@@ -2,6 +2,22 @@
 import { TOPICS, publish } from "./pubSub.js"
 
 
+// Define a subclass of Map that implements a pop() method.
+class PoppableMap extends Map {
+  pop (k) {
+    /* If the Map has the key, delete the key and return its value, otherwise return
+       undefined.
+     */
+    if (!this.has(k)) {
+      return undefined
+    }
+    const v = this.get(k)
+    this.delete(k)
+    return v
+  }
+}
+
+
 export function createElement (DOMString) {
   // Return an HTML element object for the given DOM string.
   const wrapper = document.createElement("div")
@@ -23,7 +39,7 @@ export const removeChildren = el => Array.from(el.children).forEach(x => x.remov
 export function getUrlSearchParams () {
   // Parse the URL search params, collecting array-type values into actual
   // arrays and return the resulting <key> -> <value(s)> map.
-  const params = new Map()
+  const params = new PoppableMap()
   const searchParams = new URLSearchParams(location.search)
   for (let [k, v] of searchParams.entries()) {
     const isArray = k.endsWith("[]")

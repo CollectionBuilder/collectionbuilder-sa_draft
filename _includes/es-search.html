@@ -1,65 +1,76 @@
 
-<table>
-  <tr>
-    <td id="facets" class="align-top"></td>
-    <td class="align-top" style="min-width: 24em;">
-      <div class="ml-3">
-        <form id="inner-search">
-          <input type="text" name="q" class="form-control" placeholder="Enter your search term...">
-          <div id="advanced-search" style="padding: 0 .5em 0 .5em; text-align: right;">
-            <button type="button" class="text-right"
-                    style="font-size: .7em;
-                          background-color: transparent;
-                          border: none;
-                          color: #666;
-                          padding: 0;
-                          position: relative;
-                          top: -0.5em;
-                          right: -.5em;
-                          font-weight: bold;
-                          text-decoration: underline;">
-              show advanced options
-            </button>
-            <div style="display: none; text-align: left;">
-              <h1 style="font-size: 1em;">
-                Select fields to search:
-              </h1>
-              <span style="font-size: .8em; color: #444;">
-                <input type="checkbox" name="toggle" value="toggle}" id="include-fields-toggle" />
-                <label for="include-fields-toggle">
-                  ( all / none )
-                </label>
-              </span>
-              {%- assign fields = site.data.config-search -%}
-              {% for f in fields %}
-              <div style="font-size: .8em; color: #444;">
-                <input type="checkbox" name="fields[]" value="{{ f.field }}"
-                       id="include-field-{{ f.field }}" checked />
-                <label for="include-field-{{ f.field }}">
-                  {{ f.field | replace: "_", " " | capitalize }}
-                </label>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-          <clear-filters></clear-filters>
-        </form>
-        <table id="results" class="table table-responsive">
-          <thead>
-            <tr>
-              <td style="border-top: none; padding-bottom: 0;">
-                <div class="results-header"></div>
-              </td>
-            </tr>
-          </thead>
-          <tbody>
-          </tbody>
-        </table>
-      </div>
-    </td>
-  </tr>
-</table>
+{%- assign allFields = site.data.config-search -%}
+{%- assign facetFields = site.data.config-search | where: "facet","true" -%}
+{%- assign displayFields = site.data.config-search | where: "display","true" -%}
 
+<search-app
+  elasticsearch-url="{{ site.elasticsearch-protocol }}://{{ site.elasticsearch-host }}:{{ site.elasticsearch-port }}"
+  fields="{%- for f in allFields -%}{{ f.field }},{%- endfor -%}"
+  faceted-fields="{%- for f in facetFields -%}{{ f.field }},{%- endfor -%}"
+  display-fields="{%- for f in displayFields -%}{{ f.field }},{%- endfor -%}"
+></search-app>
+
+<!-- <table>
+     <tr>
+     <td id="facets" class="align-top"></td>
+     <td class="align-top" style="min-width: 24em;">
+     <div class="ml-3">
+     <form id="inner-search">
+     <input type="text" name="q" class="form-control" placeholder="Enter your search term...">
+     <div id="advanced-search" style="padding: 0 .5em 0 .5em; text-align: right;">
+     <button type="button" class="text-right"
+     style="font-size: .7em;
+     background-color: transparent;
+     border: none;
+     color: #666;
+     padding: 0;
+     position: relative;
+     top: -0.5em;
+     right: -.5em;
+     font-weight: bold;
+     text-decoration: underline;">
+     show advanced options
+     </button>
+     <div style="display: none; text-align: left;">
+     <h1 style="font-size: 1em;">
+     Select fields to search:
+     </h1>
+     <span style="font-size: .8em; color: #444;">
+     <input type="checkbox" name="toggle" value="toggle}" id="include-fields-toggle" />
+     <label for="include-fields-toggle">
+     ( all / none )
+     </label>
+     </span>
+     {%- assign fields = site.data.config-search -%}
+     {% for f in fields %}
+     <div style="font-size: .8em; color: #444;">
+     <input type="checkbox" name="fields[]" value="{{ f.field }}"
+     id="include-field-{{ f.field }}" checked />
+     <label for="include-field-{{ f.field }}">
+     {{ f.field | replace: "_", " " | capitalize }}
+     </label>
+     </div>
+     {% endfor %}
+     </div>
+     </div>
+     <clear-filters></clear-filters>
+     </form>
+     <table id="results" class="table table-responsive">
+     <thead>
+     <tr>
+     <td style="border-top: none; padding-bottom: 0;">
+     <div class="results-header"></div>
+     </td>
+     </tr>
+     </thead>
+     <tbody>
+     </tbody>
+     </table>
+     </div>
+     </td>
+     </tr>
+     </table>
+-->
 <template id="result">
   <tr>
     <td style="display: flex;">
