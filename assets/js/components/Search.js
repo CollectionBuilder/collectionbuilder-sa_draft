@@ -11,6 +11,7 @@ import {
   createElement,
   getUrlSearchParams,
   removeChildren,
+  updateUrlSearchParams,
 } from "../helpers.js"
 
 
@@ -26,8 +27,7 @@ export class Search extends HTMLElement {
       <div class="container">
         <div class="row">
           <div class="col facets"></div>
-          <div class="col">
-            Results...
+          <div class="col results">
           </div>
         </div>
       </div>
@@ -209,9 +209,39 @@ export class Search extends HTMLElement {
       includeKeys = [ "collection" ].concat(includeKeys)
     }
 
+    // Instantiate the SearchFacets component.
     searchFacets = new SearchFacets(aggregations, includeKeys)
+
+    // Register the facet value click handler.
+    searchFacets.addValueClickListener(this.facetValueClickHandler.bind(this))
+
+    // Append the component to the container.
     searchFacetsContainerEl.appendChild(searchFacets)
   }
+
+  facetValueClickHandler (name, value) {
+    /* Handle a facet value click by updating the URL search params and initiating
+       a new search.
+    */
+    const params = new URLSearchParams(location.search)
+    const paramKey = `${name}[]`
+    let paramVals = params.getAll(paramKey)
+
+    if (paramVals.includes(value)) {
+      paramVals = paramVals.filter(x => x !== value)
+    } else {
+      paramVals.push(value)
+    }
+    params.delete(paramKey)
+    paramVals.forEach(v => params.append(paramKey, v))
+
+    // Delete any start param.
+    params.delete("start")
+
+    updateUrlSearchParams(params)
+    this.search()
+  }
+
 }
 
 customElements.define("search-app", Search)
