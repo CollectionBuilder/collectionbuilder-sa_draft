@@ -3,6 +3,16 @@
  * Elasticsearch Search Interface Styles
  *****************************************************************************/
 
+search-app .search-overlay {
+  background-color: rgba(255, 255, 255, .5);
+  display: none;
+  z-index: 1;
+}
+
+search-app .search-overlay > div {
+  margin: 0 auto;
+}
+
 search-facet {
   display: block;
   font-size: 1rem;
@@ -100,10 +110,6 @@ search-result {
   display: flex;
   border-top: 1px solid #dee2e6;
   padding: .75rem;
-}
-
-search-result:first-child {
-  border-top: none;
 }
 
 search-result img {

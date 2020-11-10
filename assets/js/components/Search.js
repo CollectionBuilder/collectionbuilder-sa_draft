@@ -2,6 +2,7 @@
 import "./ClearFilters.js"
 
 import SearchFacets from "./SearchFacets.js"
+import SearchResultsHeader from "./SearchResultsHeader.js"
 import SearchResults from "./SearchResults.js"
 
 import {
@@ -27,19 +28,28 @@ export class Search extends HTMLElement {
 
     this.appendChild(createElement(
       `
-      <div class="container">
+      <div class="container position-relative">
+
+        <div class="position-absolute w-100 h-100 search-overlay">
+          <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
+
         <div class="row">
           <div class="col-4 facets"></div>
           <div class="col">
             <input type="text" class="form-control mb-2" placeholder="Search" aria-label="search box">
             <clear-filters num-applied="0"></clear-filters>
-            <div class="results">
+            <div class="results-header"></div>
+            <div class="results"></div>
           </div>
         </div>
       </div>
       `
     ))
 
+    this.searchOverlay = this.querySelector(".search-overlay")
     this.clearFiltersButton = this.querySelector("clear-filters")
 
     // Initialize the search input value from the URL search params.
@@ -118,6 +128,9 @@ export class Search extends HTMLElement {
     /* Execute a new search based on the current URL search params and return the
        result.
      */
+    // Show the search overlay spinner.
+    this.searchOverlay.style.display = "flex"
+
     const searchParams = getUrlSearchParams()
 
     // Set the array of indices to search against.
@@ -219,8 +232,14 @@ export class Search extends HTMLElement {
     // Render the facets.
     this.renderFacets(searchResponse.aggregations)
 
+    // Render the results header.
+    this.renderResultsHeader(searchResponse.hits.total.value, start, size)
+
     // Render the results.
     this.renderResults(searchResponse.hits.hits)
+
+    // Hide the search overlay spinner.
+    this.searchOverlay.style.display = "none"
   }
 
   async renderFacets (aggregations) {
@@ -249,6 +268,20 @@ export class Search extends HTMLElement {
 
     // Append the component to the container.
     searchFacetsContainerEl.appendChild(searchFacets)
+  }
+
+  async renderResultsHeader (numHits, start, size) {
+    // Get the results header container and remove any existing children.
+    const container = this.querySelector("div.results-header")
+    removeChildren(container)
+
+    const searchResultsHeader = new SearchResultsHeader(numHits, start, size)
+    container.appendChild(searchResultsHeader)
+
+    // Register the page size selector change handler.
+    searchResultsHeader.querySelector("select[is=page-size-selector]")
+    .addEventListener("change", this.pageSizeSelectorChangeHandler.bind(this))
+
   }
 
   async renderResults (hits) {
@@ -310,6 +343,16 @@ export class Search extends HTMLElement {
     this.search()
   }
 
+  pageSizeSelectorChangeHandler (e) {
+    /* Execute a new search when the page size selector is changed.
+    */
+    // Update the URL 'q' search param.
+    const size = e.target.value
+    const params = new URLSearchParams(location.search)
+    params.set("size", size)
+    updateUrlSearchParams(params)
+    this.search()
+  }
 
   clearFiltersClickHandler (e) {
     /* Handler a click on the clear-filters button.
