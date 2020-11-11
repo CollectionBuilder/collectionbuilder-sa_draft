@@ -10,10 +10,25 @@ export class SearchFacetValue extends HTMLElement {
   constructor () {
     super()
 
+    // Add Bootstrap component classes.
+    this.classList.add(
+      "d-flex",
+      "text-nowrap",
+      "py-1",
+      "px-2",
+      "btn",
+      "btn-light",
+      "border-bottom",
+      "rounded-0"
+    )
+
+    // Add custom component classes.
+    this.classList.add("cursor-pointer")
+
     // Define the component's inner structure.
     this.innerHTML =
-      `<span class="name"></span>
-       <span class="doc-count"></span>
+      `<span class="text-truncate pr-2 name"></span>
+       <span class="ml-auto doc-count"></span>
       `
   }
 
@@ -32,9 +47,10 @@ export class SearchFacetValue extends HTMLElement {
     // Update the doc-count element.
     this.querySelector(".doc-count").textContent = selected ? "x" : docCount
 
-    // Maybe add the "selected" class.
+    // If selected, replace the btn-light class with btn-info.
     if (selected) {
-      this.classList.add("selected")
+      this.classList.remove("btn-light")
+      this.classList.add("btn-info")
     }
   }
 }

@@ -64,6 +64,10 @@ export default class SearchFacets extends HTMLElement {
 
       this.appendChild(searchFacetEl)
 
+      // Remove the bottom border from the last value.
+      const searchFacetValues = searchFacetEl.querySelectorAll("search-facet-value")
+      searchFacetValues[searchFacetValues.length - 1].classList.remove("border-bottom")
+
       // Register the value click listener for this facet.
       searchFacetEl.addValueClickListener(this.valueClickHandler.bind(this))
     }

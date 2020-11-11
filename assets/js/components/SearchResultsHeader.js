@@ -37,7 +37,9 @@ export default class SearchResultsHeader extends HTMLElement {
        </span>
        <span class="pl-4 text-nowrap ml-auto">
          <label for="results-per-page">Show</label>
-         <select is="page-size-selector" value="${this.size}" options="10,25,50,100"></select>
+         <select is="page-size-selector" value="${this.size}" options="10,25,50,100"
+                 class="cursor-pointer">
+         </select>
        </span>
       `
   }

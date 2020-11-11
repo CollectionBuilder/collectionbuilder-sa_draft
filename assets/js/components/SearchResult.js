@@ -9,9 +9,17 @@ export default class SearchResult extends HTMLElement {
   constructor (doc, displayFields) {
     super()
 
+    // Add the Bootstrap component classes.
+    this.classList.add(
+      "d-flex",
+      "border-top",
+      "p-4"
+    )
+
+    // Define the component's inner structure.
     this.innerHTML =
       `<a href="${doc.url}">
-         <img src="${doc.thumbnailContentUrl}">
+         <img src="${doc.thumbnailContentUrl}" style="width: 100px">
        </a>
        <div class="details">
          <h1 class="h4 ml-3">

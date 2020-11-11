@@ -16,11 +16,14 @@ export default class SearchFacetValues extends HTMLElement {
     // Define a flag to indicate whether we should show all the values.
     this.showAll = false
 
+    // Set component classes.
+    this.classList.add("d-block")
+
     // Append the show-more/fewer element.
     this.innerHTML +=
-      `<div class="show-more">
+      `<button class="btn btn-info w-100 rounded-0 pt-1 pb-1 show-more">
          show more
-       </div>`
+       </button>`
   }
 
   connectedCallback () {
@@ -57,8 +60,12 @@ export default class SearchFacetValues extends HTMLElement {
       this.showAll ? "show fewer" : "show more"
 
     // Show/hide the value elements in the non-default slice.
-    const display = this.showAll ? "flex" : "none"
-    this.valueElsSlice.forEach(el => el.style.display = display)
+    const classToAdd = this.showAll ? "d-flex" : "d-none"
+    const classToRemove = !this.showAll ? "d-flex" : "d-none"
+    this.valueElsSlice.forEach(el => {
+      el.classList.remove(classToRemove)
+      el.classList.add(classToAdd)
+    })
   }
 
   toggleShowAll () {

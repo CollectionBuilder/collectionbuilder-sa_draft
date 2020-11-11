@@ -25,11 +25,22 @@ export class SearchFacet extends HTMLElement {
     // we were using a shadow DOM.
     const searchFacetValuesEl = this.querySelector("search-facet-values")
 
+    // Add component styles.
+    this.classList.add(
+      "d-block",
+      "border",
+      "border-secondary",
+      "rounded",
+      "overflow-hidden",
+      "mb-4",
+      "w-100"
+    )
+
     // Define the component's inner structure.
     this.innerHTML =
-      `<h1 class="name">
+      `<h1 class="d-flex bg-dark text-white-50 font-weight-bold p-2 mb-0 text-nowrap h6">
          <span class="name"></span>
-         <span class="collapsed-icon">-</span>
+         <span class="font-weight-bold text-monospace ml-auto collapsed-icon">-</span>
        </h1>
        <!-- Define a slot for <search-facet-values> element -->
        <slot></slot>`

@@ -26,12 +26,17 @@ export class Search extends HTMLElement {
     this.indicesDirectoryIndexTitleMap = new Map()
     this.indicesDirectoryTitleIndexMap = new Map()
 
+    // Set component styles.
+    this.style.fontSize = "1rem"
+
+    // Define the component's inner structure.
     this.appendChild(createElement(
       `
       <div class="container position-relative">
 
-        <div class="position-absolute w-100 h-100 search-overlay">
-          <div class="spinner-border" role="status">
+        <div id="search-overlay" class="position-absolute w-100 h-100 d-flex"
+             style="top: 0; background-color: rgba(255, 255, 255, 0.5);">
+          <div class="spinner-border ml-auto mr-auto" role="status">
             <span class="sr-only">Loading...</span>
           </div>
         </div>
@@ -49,10 +54,15 @@ export class Search extends HTMLElement {
       `
     ))
 
-    this.searchOverlay = this.querySelector(".search-overlay")
+    // Extricate the overlay element from the DOM so that we can inject it as necessary.
+    this.searchOverlay = this.querySelector("#search-overlay")
+    this.searchOverlay.remove()
+
+    // Get a reference to the clear filters button.
     this.clearFiltersButton = this.querySelector("clear-filters")
 
-    // Initialize the search input value from the URL search params.
+    // Get a reference to the search input and initialize it with the value from the
+    // URL search params.
     this.searchInput = this.querySelector("input[type=text]")
     const searchParams = getUrlSearchParams()
     if (searchParams.has("q")) {
@@ -129,7 +139,7 @@ export class Search extends HTMLElement {
        result.
      */
     // Show the search overlay spinner.
-    this.searchOverlay.style.display = "flex"
+    this.showOverlay()
 
     const searchParams = getUrlSearchParams()
 
@@ -239,7 +249,19 @@ export class Search extends HTMLElement {
     this.renderResults(searchResponse.hits.hits)
 
     // Hide the search overlay spinner.
-    this.searchOverlay.style.display = "none"
+    this.hideOverlay()
+  }
+
+  showOverlay () {
+    /* Show the search spinner overlay.
+    */
+    this.querySelector(".container").appendChild(this.searchOverlay)
+  }
+
+  hideOverlay () {
+    /* Hide the search spinner overlay.
+    */
+    this.searchOverlay.remove()
   }
 
   async renderFacets (aggregations) {
