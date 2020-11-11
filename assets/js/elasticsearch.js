@@ -20,8 +20,9 @@ export async function getIndicesDirectory (esUrl) {
   return []
 }
 
-export function buildQuery (indices, { q = "", filters = {}, start = 0, size = 10, fields = ["*"],
-                                       aggregationNameFieldMap = {}, _source = "*"}) {
+export function buildQuery (indices, { q = "", filters = {}, start = 0, size = 10,
+                                       fields = ["*"], aggregationNameFieldMap = {},
+                                       _source = "*"}) {
   /* Return an Elasticsearch query object for the given parameters.
   */
 

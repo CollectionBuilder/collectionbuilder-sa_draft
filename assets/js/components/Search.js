@@ -81,6 +81,12 @@ export class Search extends HTMLElement {
       throw 'Please specify a valid <es-search> element "elasticsearch-url" value'
     }
 
+    // Read the Elasticsearch index property.
+    this.esIndex = this.getAttribute("elasticsearch-index")
+    if (!this.esIndex) {
+      throw 'Please specify a valid <es-search> element "elasticsearch-index" value'
+    }
+
     // Parse the list of all fields.
     if (this.hasAttribute("fields")) {
       let fields = this.getAttribute("fields")
@@ -115,7 +121,7 @@ export class Search extends HTMLElement {
     }
 
     // Parse the search-multi property.
-    const isMulti = this.hasAttribute("search-multi")
+    this.isMulti = this.hasAttribute("search-multi")
 
     // Get the indices directory data and use it to init the title/index maps.
     for (const { index, title } of (await getIndicesDirectory(this.esUrl))) {
@@ -143,11 +149,19 @@ export class Search extends HTMLElement {
 
     const searchParams = getUrlSearchParams()
 
+    // Track the total number of applied filter values.
+    let numAppliedFilters = 0
+
     // Set the array of indices to search against.
     let indiceTitles
     if (!this.isMulti) {
-      indiceTitles = [ "{{ site.title }}" ]
+      // This is not the multi-collection search page, so only search against the host
+      // collection.
+      indiceTitles = [ this.indicesDirectoryIndexTitleMap.get(this.esIndex) ]
     } else {
+      // This is the multi-collection search page, so search against the collections
+      // specified by the collection[] URL params, or all collections if no such
+      // param is specified.
       indiceTitles = searchParams.get("collection[]")
       if (!indiceTitles) {
         // Search all collections if none is specified.
@@ -156,6 +170,7 @@ export class Search extends HTMLElement {
         // Delete collection[] from the searchParams to prevent
         // it being specified as filter.
         searchParams.delete("collection[]")
+        numAppliedFilters += indiceTitles.length
       }
     }
     const indices = indiceTitles.map(x => this.indicesDirectoryTitleIndexMap.get(x))
@@ -182,8 +197,6 @@ export class Search extends HTMLElement {
 
     // Use the remaining searchParams entries to build the filters list.
     let filters = new Map()
-    // Count the total number of applied filter values.
-    let numAppliedFilters = 0
     for (let [ k, v ] of searchParams.entries()) {
       const isArray = k.endsWith("[]")
       let name = `${isArray ? k.slice(0, k.length - 2) : k}.raw`
