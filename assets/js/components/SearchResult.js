@@ -6,7 +6,7 @@ import {
 
 
 export default class SearchResult extends HTMLElement {
-  constructor (doc, displayFields) {
+  constructor (doc, displayFields, isMulti) {
     super()
 
     // Add the Bootstrap component classes.
@@ -28,8 +28,18 @@ export default class SearchResult extends HTMLElement {
          <!-- Non-title display fields will be appended here -->
        </div>`
 
-    // Append a detail element for all remaining displayFields.
     const detailsEl = this.querySelector(".details")
+
+    // If this is the multi-search page, display a collection link.
+    if (isMulti) {
+      detailsEl.appendChild(createElement(
+        `<p class="ml-3 mb-1">
+           Collection: <a href="${doc.collectionUrl}">${doc.collectionTitle}</a>
+         </p>`
+      ))
+    }
+
+    // Append a detail element for all remaining displayFields.
     for (const field of displayFields.slice(1)) {
       const value = doc[field]
       if (value !== undefined) {

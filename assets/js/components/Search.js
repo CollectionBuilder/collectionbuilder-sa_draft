@@ -131,7 +131,8 @@ export class Search extends HTMLElement {
     }
 
     // Register the search input keydown handler.
-    this.searchInput.addEventListener("keydown", this.searchInputKeydownHandler.bind(this))
+    this.searchInput
+        .addEventListener("keydown", this.searchInputKeydownHandler.bind(this))
 
     // Register the clear filters button click handler.
     this.clearFiltersButton
@@ -343,7 +344,7 @@ export class Search extends HTMLElement {
     }
 
     // Instantiate the SearchFacets component.
-    searchResults = new SearchResults(hits, this.displayFields)
+    searchResults = new SearchResults(hits, this.displayFields, this.isMulti)
 
     // Append the component to the container.
     searchResultsContainerEl.appendChild(searchResults)
