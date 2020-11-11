@@ -13,7 +13,6 @@ export class SearchFacetValue extends HTMLElement {
     // Add Bootstrap component classes.
     this.classList.add(
       "d-flex",
-      "text-nowrap",
       "py-1",
       "px-2",
       "btn",

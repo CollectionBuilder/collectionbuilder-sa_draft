@@ -1,4 +1,7 @@
 
+import { createElement } from "../helpers.js"
+
+
 /******************************************************************************
 * Search Facet Component
 *
@@ -6,7 +9,7 @@
 *
 ******************************************************************************/
 
-export class SearchFacet extends HTMLElement {
+export default class SearchFacet extends HTMLElement {
   constructor () {
     super()
 
@@ -20,11 +23,6 @@ export class SearchFacet extends HTMLElement {
     this.name = undefined
     this.displayName = undefined
 
-    // Grab the <search-facet-values> element so that we can later manually
-    // place it into its <slot>. Note that this would happen automatically if
-    // we were using a shadow DOM.
-    const searchFacetValuesEl = this.querySelector("search-facet-values")
-
     // Add component styles.
     this.classList.add(
       "d-block",
@@ -37,22 +35,26 @@ export class SearchFacet extends HTMLElement {
     )
 
     // Define the component's inner structure.
-    this.innerHTML =
-      `<h1 class="d-flex bg-dark text-white-50 font-weight-bold p-2 mb-0 text-nowrap h6">
+    this.appendChild(createElement(
+      `<h1 class="d-flex bg-dark text-white-50 font-weight-bold p-2 mb-0 text-nowrap h6
+                  cursor-pointer">
          <span class="name"></span>
          <span class="font-weight-bold text-monospace ml-auto collapsed-icon">-</span>
-       </h1>
-       <!-- Define a slot for <search-facet-values> element -->
-       <slot></slot>`
+       </h1>`
+    ))
 
-    // Insert the <search-facet-values> element into its slot.
-    this.querySelector("slot").replaceWith(searchFacetValuesEl)
+    this.appendChild(createElement(`<slot></slot>`))
   }
 
   connectedCallback () {
     // Read the custom element attributes.
     this.name = this.getAttribute("name")
     this.displayName = this.getAttribute("display-name")
+
+    // Insert the <search-facet-values> element into its slot.
+    // Note that this would happen automatically if we were using a shadow DOM.
+    const searchFacetValuesEl = this.querySelector("search-facet-values")
+    this.querySelector("slot").replaceWith(searchFacetValuesEl)
 
     // If collapsed was specified, collapse the values.
     if (this.hasAttribute("collapsed")) {
@@ -82,8 +84,14 @@ export class SearchFacet extends HTMLElement {
     // Update the search facet values display.
     // Note the assumption that both search-facet-values element has a default
     // display value of "block".
-    this.querySelector("search-facet-values").style.display =
-      this.collapsed ? "none" : "block"
+    const searchFacetValuesEl = this.querySelector("search-facet-values")
+    if (this.collapsed) {
+      searchFacetValuesEl.classList.remove("d-block")
+      searchFacetValuesEl.classList.add("d-none")
+    } else {
+      searchFacetValuesEl.classList.remove("d-none")
+      searchFacetValuesEl.classList.add("d-block")
+    }
   }
 
   addValueClickListener (fn) {

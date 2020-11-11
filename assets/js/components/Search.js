@@ -1,6 +1,7 @@
 
 import "./ClearFilters.js"
 
+import MultiCollectionCTAFacet from "./MultiCollectionCTAFacet.js"
 import SearchFacets from "./SearchFacets.js"
 import SearchResultsHeader from "./SearchResultsHeader.js"
 import SearchResults from "./SearchResults.js"
@@ -290,7 +291,7 @@ export class Search extends HTMLElement {
     // Get the ordered array of facet names.
     let includeKeys = this.facetedFields
 
-    // If this is the multi-search page, include a collection facet.
+    // If this is the multi-search page, so include a collection facet.
     if (this.isMulti) {
       includeKeys = [ "collection" ].concat(includeKeys)
     }
@@ -303,6 +304,15 @@ export class Search extends HTMLElement {
 
     // Append the component to the container.
     searchFacetsContainerEl.appendChild(searchFacets)
+
+    // If this is not the multisearch page, include a multi-search call-to-action
+    // as the first facet.
+    if (!this.isMulti) {
+      const numAdditionalCollections = this.indicesDirectoryIndexTitleMap.size - 1
+      const multiCtaFacet = new MultiCollectionCTAFacet(numAdditionalCollections)
+      searchFacets.insertBefore(multiCtaFacet, searchFacets.children[0])
+    }
+
   }
 
   async renderResultsHeader (numHits, start, size) {
