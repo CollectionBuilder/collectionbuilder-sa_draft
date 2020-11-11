@@ -12,6 +12,8 @@
 {% if page.layout == "map" %}{% include js/map-js.html %}{% endif %}
 {% if page.layout == "item" %}{% include js/arrow-page-control-js.html %}{% endif %}
 {%- if page.layout == "home-infographic" %}{% include js/carousel-js.html %}{% endif -%}
-{% if page.layout == "search" or page.layout == "multi-collection-search" and site.elasticsearch-host == "" %}
-  {% include js/lunr-js.html %}
+{% if page.layout == "search" or page.layout == "multi-collection-search" %}
+  {% if site.elasticsearch-host == "" %}
+    {% include js/lunr-js.html %}
+  {% endif %}
 {% endif %}
