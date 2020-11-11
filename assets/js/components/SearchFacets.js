@@ -38,6 +38,11 @@ export default class SearchFacets extends HTMLElement {
     for (const key of (this.includeKeys || Object.keys(this.aggregations))) {
       const buckets = this.aggregations[key].buckets
 
+      // Ignore the facet if no values were returned.
+      if (buckets.length === 0) {
+        continue
+      }
+
       // Sort the value by the order in which they were applied, as indicated
       // by the search URL params.
       const selectedFacetVals = getSelectedFacetVals(key).reverse()
