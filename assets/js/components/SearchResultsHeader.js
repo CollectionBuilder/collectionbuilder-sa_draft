@@ -1,5 +1,8 @@
 
+import "./Paginator.js"
+
 import { createElement } from "../helpers.js"
+
 
 /******************************************************************************
 * Search Results Header Component
@@ -35,12 +38,18 @@ export default class SearchResultsHeader extends HTMLElement {
       `<span class="h4 text-nowrap">
          Showing ${this.startIdx} - ${this.endIdx} of ${this.numHits} Results
        </span>
-       <span class="pl-4 text-nowrap ml-auto">
-         <label for="results-per-page">Show</label>
-         <select is="page-size-selector" value="${this.size}" options="10,25,50,100"
-                 class="cursor-pointer">
-         </select>
-       </span>
+       <div class="ml-auto text-right">
+         <span class="text-nowrap">
+           <label for="results-per-page">Results per page</label>
+           <select is="page-size-selector" value="${this.size}" options="10,25,50,100"
+                   class="cursor-pointer">
+           </select>
+         </span>
+         <paginator-control num-total="${this.numHits}" page-size="${this.size}"
+                            current-page="${Math.floor(this.startIdx / this.size) + 1}"
+                            class="d-block mt-1 mb-2">
+         </paginator-control>
+       </div>
       `
   }
 }

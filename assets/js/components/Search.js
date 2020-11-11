@@ -327,6 +327,9 @@ export class Search extends HTMLElement {
     searchResultsHeader.querySelector("select[is=page-size-selector]")
     .addEventListener("change", this.pageSizeSelectorChangeHandler.bind(this))
 
+    // Register the paginator click handler.
+    searchResultsHeader.querySelector("paginator-control")
+        .addEventListener("click", this.paginatorClickHandler.bind(this))
   }
 
   async renderResults (hits) {
@@ -415,6 +418,33 @@ export class Search extends HTMLElement {
 
     // Also delete start if present.
     params.delete("start")
+
+    // Update the URL search params.
+    updateUrlSearchParams(params)
+
+    // Execute a new search.
+    this.search()
+  }
+
+  paginatorClickHandler (e) {
+    /* Handler a click on a paginator button.
+    */
+    e.stopPropagation()
+    const target = e.target
+    if (target.tagName !== "BUTTON") {
+      return
+    }
+
+    // Get the page button's start attribute.
+    const start = target.start
+
+    // Add or update the URL search param start value.
+    const params = new URLSearchParams(location.search)
+    if (start === 0) {
+      params.delete("start")
+    } else {
+      params.set("start", start)
+    }
 
     // Update the URL search params.
     updateUrlSearchParams(params)

@@ -58,3 +58,18 @@ export function updateUrlSearchParams(searchParams) {
   // Use pushState() to update the address bar without reloading the page.
   history.pushState(null, document.title, url)
 }
+
+
+export function getAttribute (el, attr, defaultValue = undefined) {
+  /* Return an HTMLElement's attribute value. If the attribute doesn't exist and a
+     default value is specified, return the default value, otherwise throw an error.
+  */
+  if (el.hasAttribute(attr)) {
+    return el.getAttribute(attr)
+  }
+  if (defaultValue !== undefined) {
+    return defaultValue
+  }
+  console.warn(el)
+  throw `Element (previous console warning) has no attribute: "${attr}"`
+}
