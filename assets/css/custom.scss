@@ -29,7 +29,7 @@ $on-jumbo:        1200px;
 }
 
 /* buttons to theme */
-{% assign btns = site.data.config-theme-colors | where_exp: "item","item.color != nil" %} 
+{% assign btns = site.data.config-theme-colors | where_exp: "item","item.color != nil" %}
 {% for btn in btns %}
 ${{ btn.color_class }}: {{ btn.color }};
 {% endfor %}
@@ -42,5 +42,9 @@ $theme-colors: map-merge(
   ),
   $theme-colors
 );
+
+.cursor-pointer {
+    cursor: pointer;
+}
 
 @import "base", "theme-colors", "pages", "custom";
