@@ -1,7 +1,7 @@
 
 import "./Paginator.js"
 
-import { createElement } from "../helpers.js"
+import { createElement } from "../lib/helpers.js"
 
 
 /******************************************************************************

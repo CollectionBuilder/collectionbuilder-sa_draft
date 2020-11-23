@@ -2,7 +2,7 @@
 import {
   createElement,
   snakeToTitleCase,
-} from "../helpers.js"
+} from "../lib/helpers.js"
 
 
 export default class SearchResult extends HTMLElement {

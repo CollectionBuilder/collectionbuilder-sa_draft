@@ -1,0 +1,112 @@
+{
+  "name": "collectionbuilder-search",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "browserslist": {
+    "modern": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version",
+      "last 1 ios version",
+      "last 1 edge version"
+    ],
+    "legacy": [
+      "defaults",
+      "IE >= 10"
+    ]
+  },
+  "babel": {
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "useBuiltIns": "usage",
+          "corejs": "3.6.4"
+        }
+      ]
+    ]
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true
+    },
+    "extends": [
+      "eslint:recommended",
+      "airbnb-base"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 9,
+      "sourceType": "module"
+    },
+    "plugins": [
+      "compat"
+    ],
+    "rules": {
+      "compat/compat": "warn",
+      "array-bracket-spacing": [
+        "error",
+        "always"
+      ],
+      "arrow-parens": [
+        "error",
+        "as-needed"
+      ],
+      "comma-dangle": 1,
+      "import/extensions": 0,
+      "no-confusing-arrow": 0,
+      "no-void": 0,
+      "quotes": 0,
+      "semi": 0,
+      "space-before-function-paren": [
+        "error",
+        "always"
+      ],
+      "no-underscore-dangle": 0,
+      "implicit-arrow-linebreak": 0
+    }
+  },
+  "scripts": {
+    "test": "jest",
+    "build:js": "babel src -d build",
+    "lint:js": "eslint src/*/*.js",
+    "build:webpack": "npx webpack --mode=production",
+    "build:dev": "npm run lint:js && npm run build:js",
+    "build:modern": "export BROWSERSLIST_ENV=modern && npm run lint:js && npm run build:js && npm run build:webpack",
+    "build:legacy": "export BROWSERSLIST_ENV=legacy && npm run lint:js && npm run build:js && npm run build:webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CollectionBuilder/collectionbuilder-sa_draft"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CollectionBuilder/collectionbuilder-sa_draft/issues"
+  },
+  "homepage": "https://collectionbuilder.github.io",
+  "devDependencies": {
+    "@babel/cli": "^7.0.0",
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.9.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-compat": "^3.5.1",
+    "eslint-plugin-import": "^2.20.2",
+    "install": "^0.13.0",
+    "jest": "^25.3.0",
+    "npm": "^6.14.4",
+    "webpack": "^4.42.1",
+    "webpack-bundle-analyzer": "^3.6.1",
+    "webpack-cli": "^3.3.11"
+  },
+  "dependencies": {
+    "aggregation": "^1.2.6",
+    "core-js": "^3.6.4"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ]
+  }
+}

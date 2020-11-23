@@ -1,25 +1,22 @@
-
-/******************************************************************************
+/*
  * Search Facets Component
  *
  * This component is used to contain a list of <search-facet> elements.
  *
- ******************************************************************************/
+ */
 
 // Import the following component modules just to register the custom elements.
-import "/assets/js/components/SearchFacet.js"
-import "/assets/js/components/SearchFacetValues.js"
-import "/assets/js/components/SearchFacetValue.js"
+import "./SearchFacet.js"
+import "./SearchFacetValues.js"
+import "./SearchFacetValue.js"
 
 import {
   createElement,
   snakeToTitleCase,
-} from "../helpers.js"
-
+} from "../lib/helpers.js"
 
 const getSelectedFacetVals = name =>
-  new URLSearchParams(location.search).getAll(`${name}[]`)
-
+  new URLSearchParams(window.location.search).getAll(`${name}[]`)
 
 export default class SearchFacets extends HTMLElement {
   constructor (aggregations, includeKeys) {
@@ -35,12 +32,12 @@ export default class SearchFacets extends HTMLElement {
 
   connectedCallback () {
     // Iterate through the aggregations, creating a SearchFacet for each.
-    for (const key of (this.includeKeys || Object.keys(this.aggregations))) {
-      const buckets = this.aggregations[key].buckets
+    (this.includeKeys || Object.keys(this.aggregations)).forEach(key => {
+      const { buckets } = this.aggregations[key]
 
       // Ignore the facet if no values were returned.
       if (buckets.length === 0) {
-        continue
+        return
       }
 
       // Sort the value by the order in which they were applied, as indicated
@@ -52,10 +49,10 @@ export default class SearchFacets extends HTMLElement {
 
       // Define a helper that will create an HTML search-facet-value element
       // string from a search response aggregation bucket.
-      const bucketToSearchFacetValueStr = ({ key, doc_count }) =>
-        `<search-facet-value value="${key}"
-                             doc-count="${doc_count}"
-                             ${selectedFacetVals.includes(key) ? "selected" : ""}>
+      const bucketToSearchFacetValueStr = ({ _key, docCount }) =>
+        `<search-facet-value value="${_key}"
+                             doc-count="${docCount}"
+                             ${selectedFacetVals.includes(_key) ? "selected" : ""}>
          </search-facet-value>`
 
       // Create the SearchFacet component.
@@ -75,7 +72,7 @@ export default class SearchFacets extends HTMLElement {
 
       // Register the value click listener for this facet.
       searchFacetEl.addValueClickListener(this.valueClickHandler.bind(this))
-    }
+    })
   }
 
   addValueClickListener (fn) {
@@ -87,7 +84,7 @@ export default class SearchFacets extends HTMLElement {
   removeValueClickListener (fn) {
     /* Remove a function from the value click listeners array.
      */
-    for (const i in this.valueClickListeners) {
+    for (let i = 0; i < this.valueClickListeners.length; i += 1) {
       if (this.valueClickListeners[i] === fn) {
         // Remove the function from the listeners array and return.
         this.valueClickListeners.splice(i, 1)
@@ -99,9 +96,7 @@ export default class SearchFacets extends HTMLElement {
   valueClickHandler (name, value) {
     /* Invoke all registered value click listeners.
      */
-    for (let fn of this.valueClickListeners) {
-      fn(name, value)
-    }
+    this.valueClickListeners.forEach(fn => fn(name, value))
   }
 }
 
