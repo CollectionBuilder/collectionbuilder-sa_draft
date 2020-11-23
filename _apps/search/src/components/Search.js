@@ -256,9 +256,10 @@ export default class Search extends HTMLElement {
         indice => collectionAgg.buckets.push({ key: indice, doc_count: 0 })
       )
     // Swap the indice names with their titles.
-    collectionAgg.buckets.forEach(bucket => {
+    for (let i = 0; i < collectionAgg.buckets.length; i += 1) {
+      const bucket = collectionAgg.buckets[i]
       bucket.key = this.indicesDirectoryIndexTitleMap.get(bucket.key)
-    })
+    }
     searchResponse.aggregations.collection = collectionAgg
 
     // Update the clear filters button.

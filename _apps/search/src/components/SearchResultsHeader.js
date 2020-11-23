@@ -1,15 +1,12 @@
+/*
+ * Search Results Header Component
+ *
+ * This component displays search results stats and paging controls.
+ *
+ */
 
 import "./Paginator.js"
-
-import { createElement } from "../lib/helpers.js"
-
-
-/******************************************************************************
-* Search Results Header Component
-*
-* This component displays search results stats and paging controls.
-*
-******************************************************************************/
+import "./PageSizeSelector.js"
 
 export default class SearchResultsHeader extends HTMLElement {
   constructor (numHits, start, size) {
@@ -25,16 +22,17 @@ export default class SearchResultsHeader extends HTMLElement {
   }
 
   connectedCallback () {
-     // Display an error message if the start value is invalid.
-     if (this.endIdx < this.startIdx) {
-       this.classList.add("bg-warning", "text-dark", "p-3")
-       this.textContent =
-         `Query "start" value (${this.start}) exceeds the number of total ` +
-         `results (${this.numHits})`
-       return
-     }
+    // Display an error message if the start value is invalid.
+    if (this.endIdx < this.startIdx) {
+      this.classList.add("bg-warning", "text-dark", "p-3")
+      this.textContent = (
+        `Query "start" value (${this.start}) exceeds the number of total `
+        + `results (${this.numHits})`
+      )
+      return
+    }
 
-    this.innerHTML =
+    this.innerHTML = (
       `<span class="h4 text-nowrap">
          Showing ${this.startIdx} - ${this.endIdx} of ${this.numHits} Results
        </span>
@@ -51,46 +49,8 @@ export default class SearchResultsHeader extends HTMLElement {
          </paginator-control>
        </div>
       `
+    )
   }
 }
 
 customElements.define("search-results-header", SearchResultsHeader)
-
-
-/******************************************************************************
-* Page Size Selector Component
-*
-* This component is used to change the search results page size.
-*
-******************************************************************************/
-
-class PageSizeSelector extends HTMLSelectElement {
-  constructor () {
-    super()
-
-    this.classList.add("bg-white")
-  }
-
-  connectedCallback () {
-    const initialValue = this.getAttribute("value")
-    const options = this.getAttribute("options").split(",")
-
-    // If value is not in options, add it.
-    if (!options.includes(initialValue)) {
-      options.push(initialValue)
-    }
-
-    // Add the option elements.
-    for (const value of options) {
-      this.appendChild(createElement(
-        `<option value="${value}"
-                 ${value === initialValue ? "selected" : ""}>
-           ${value}
-         </option>
-        `
-      ))
-    }
-  }
-}
-
-customElements.define("page-size-selector", PageSizeSelector, { extends: "select" })

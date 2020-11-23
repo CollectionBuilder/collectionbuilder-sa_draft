@@ -52,9 +52,13 @@
         "error",
         "as-needed"
       ],
-      "comma-dangle": 1,
+      "comma-dangle": [ "warn", "always-multiline" ],
       "import/extensions": 0,
       "no-confusing-arrow": 0,
+      "no-console": [
+        "error",
+        { "allow": [ "error", "warn" ] }
+      ],
       "no-void": 0,
       "quotes": 0,
       "semi": 0,
