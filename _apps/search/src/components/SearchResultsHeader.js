@@ -22,6 +22,16 @@ export default class SearchResultsHeader extends HTMLElement {
   }
 
   connectedCallback () {
+    // Display a no results found message if there are no results.
+    if (this.numHits === 0) {
+      this.innerHTML = (
+        `<span class="h4 text-nowrap">
+           No results found
+         </span>`
+      )
+      return
+    }
+
     // Display an error message if the start value is invalid.
     if (this.endIdx < this.startIdx) {
       this.classList.add("bg-warning", "text-dark", "p-3")

@@ -339,14 +339,16 @@ export default class Search extends HTMLElement {
     const searchResultsHeader = new SearchResultsHeader(numHits, start, size)
     container.appendChild(searchResultsHeader)
 
-    // Register the page size selector change handler.
-    searchResultsHeader
-      .querySelector("select[is=page-size-selector]")
-      .addEventListener("change", this.pageSizeSelectorChangeHandler.bind(this))
+    if (numHits > 0) {
+      // Register the page size selector change handler.
+      searchResultsHeader
+        .querySelector("select[is=page-size-selector]")
+        .addEventListener("change", this.pageSizeSelectorChangeHandler.bind(this))
 
-    // Register the paginator click handler.
-    searchResultsHeader.querySelector("paginator-control")
-      .addEventListener("click", this.paginatorClickHandler.bind(this))
+      // Register the paginator click handler.
+      searchResultsHeader.querySelector("paginator-control")
+        .addEventListener("click", this.paginatorClickHandler.bind(this))
+    }
   }
 
   async renderResults (hits) {
@@ -403,8 +405,11 @@ export default class Search extends HTMLElement {
     const q = el.value
     const params = new URLSearchParams(window.location.search)
     params.set("q", q)
-    updateUrlSearchParams(params)
 
+    // Delete any start param.
+    params.delete("start")
+
+    updateUrlSearchParams(params)
     this.search()
   }
 
@@ -415,6 +420,10 @@ export default class Search extends HTMLElement {
     const size = e.target.value
     const params = new URLSearchParams(window.location.search)
     params.set("size", size)
+
+    // Delete any start param.
+    params.delete("start")
+
     updateUrlSearchParams(params)
     this.search()
   }

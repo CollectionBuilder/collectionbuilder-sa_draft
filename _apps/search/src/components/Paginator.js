@@ -11,7 +11,7 @@ import { createElement, getAttribute } from "../lib/helpers.js"
 
 // Define an Ellipsis element.
 const ellipsisElement = createElement(
-  '<span class="position-relative" style="top: .4em">&#8230;</span>'
+  '<span class="position-relative mr-1" style="top: .4em">&#8230;</span>'
 )
 
 export default class Paginator extends HTMLElement {
@@ -21,7 +21,7 @@ export default class Paginator extends HTMLElement {
     const pageSize = parseInt(getAttribute(this, "page-size"), 10)
     const currentPage = parseInt(getAttribute(this, "current-page"), 10)
 
-    const maxPage = Math.floor(numTotal / pageSize) + 1
+    const maxPage = Math.ceil(numTotal / pageSize)
 
     // Define the max number of page number button to display on each side
     // of the current page.
@@ -43,7 +43,7 @@ export default class Paginator extends HTMLElement {
 
     // Maybe add a first page button.
     if (showFirstPageButton) {
-      this.appendChild(new PaginatorButton("1", 1, false))
+      this.appendChild(new PaginatorButton("1", pageToStart(1), false))
       this.appendChild(ellipsisElement.cloneNode(true))
     }
 
