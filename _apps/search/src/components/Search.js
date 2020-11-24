@@ -146,6 +146,10 @@ export default class Search extends HTMLElement {
       "click", this.clearFiltersClickHandler.bind(this)
     )
 
+    // Execute a new search on popstate event to handle the
+    // browser back button.
+    window.addEventListener("popstate", () => this.search.bind(this)())
+
     // Execute the initial search.
     this.search()
   }
