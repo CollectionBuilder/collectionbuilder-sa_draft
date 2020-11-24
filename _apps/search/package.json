@@ -79,10 +79,10 @@
     }
   },
   "scripts": {
-    "build:dev": "npm run lint:js && npm run build:js",
-    "build:js": "babel src -d build && npm run copy",
-    "build:legacy": "export BROWSERSLIST_ENV=legacy && npm run lint:js && npm run build:js && npm run build:webpack",
-    "build:modern": "export BROWSERSLIST_ENV=modern && npm run lint:js && npm run build:js && npm run build:webpack",
+    "build:dev": "npm run lint:js && npm run build:js && npm run copy",
+    "build:js": "babel src -d build",
+    "build:legacy": "export BROWSERSLIST_ENV=legacy && npm run lint:js && npm run build:js && npm run build:webpack && npm run copy",
+    "build:modern": "export BROWSERSLIST_ENV=modern && npm run lint:js && npm run build:js && npm run build:webpack && npm run copy",
     "build:webpack": "npx webpack --mode=production",
     "copy": "cp build/dist/*.js ../../assets/js/",
     "lint:js": "eslint src/*/*.js"
