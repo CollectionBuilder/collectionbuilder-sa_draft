@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   entry: {
-    'Search': './src/components/Search.js',
+    'SearchApp': './src/components/Search.js',
   },
   output: {
     path: path.join(__dirname, "build/dist"),

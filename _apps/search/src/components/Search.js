@@ -130,7 +130,8 @@ export default class Search extends HTMLElement {
     this.isMulti = this.hasAttribute("search-multi")
 
     // Get the indices directory data and use it to init the title/index maps.
-    await getIndicesDirectory(this.esUrl).forEach(({ index, title }) => {
+    const indicesDirectory = await getIndicesDirectory(this.esUrl)
+    indicesDirectory.forEach(({ index, title }) => {
       this.indicesDirectoryIndexTitleMap.set(index, title)
       this.indicesDirectoryTitleIndexMap.set(title, index)
     })

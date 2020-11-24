@@ -49,10 +49,10 @@ export default class SearchFacets extends HTMLElement {
 
       // Define a helper that will create an HTML search-facet-value element
       // string from a search response aggregation bucket.
-      const bucketToSearchFacetValueStr = ({ _key, docCount }) =>
-        `<search-facet-value value="${_key}"
-                             doc-count="${docCount}"
-                             ${selectedFacetVals.includes(_key) ? "selected" : ""}>
+      const bucketToSearchFacetValueStr = bucket =>
+        `<search-facet-value value="${bucket.key}"
+                             doc-count="${bucket.doc_count}"
+                             ${selectedFacetVals.includes(bucket.key) ? "selected" : ""}>
          </search-facet-value>`
 
       // Create the SearchFacet component.

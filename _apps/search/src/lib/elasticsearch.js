@@ -10,7 +10,8 @@ export async function getIndicesDirectory (esUrl) {
   */
   const res = await (await fetch(`${esUrl}/directory_/_search`))
   if (res.status === 200) {
-    return (await res.json()).hits.hits.map(x => x._source)
+    const data = await res.json()
+    return data.hits.hits.map(x => x._source)
   }
   console.error("Unable to retrieve the indices directory from the Elasticsearch server")
   return []

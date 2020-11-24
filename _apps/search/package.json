@@ -52,12 +52,20 @@
         "error",
         "as-needed"
       ],
-      "comma-dangle": [ "warn", "always-multiline" ],
+      "comma-dangle": [
+        "warn",
+        "always-multiline"
+      ],
       "import/extensions": 0,
       "no-confusing-arrow": 0,
       "no-console": [
         "error",
-        { "allow": [ "error", "warn" ] }
+        {
+          "allow": [
+            "error",
+            "warn"
+          ]
+        }
       ],
       "no-void": 0,
       "quotes": 0,
@@ -71,13 +79,13 @@
     }
   },
   "scripts": {
-    "test": "jest",
-    "build:js": "babel src -d build",
-    "lint:js": "eslint src/*/*.js",
-    "build:webpack": "npx webpack --mode=production",
     "build:dev": "npm run lint:js && npm run build:js",
+    "build:js": "babel src -d build && npm run copy",
+    "build:legacy": "export BROWSERSLIST_ENV=legacy && npm run lint:js && npm run build:js && npm run build:webpack",
     "build:modern": "export BROWSERSLIST_ENV=modern && npm run lint:js && npm run build:js && npm run build:webpack",
-    "build:legacy": "export BROWSERSLIST_ENV=legacy && npm run lint:js && npm run build:js && npm run build:webpack"
+    "build:webpack": "npx webpack --mode=production",
+    "copy": "cp build/dist/*.js ../../assets/js/",
+    "lint:js": "eslint src/*/*.js"
   },
   "repository": {
     "type": "git",
@@ -90,27 +98,20 @@
   },
   "homepage": "https://collectionbuilder.github.io",
   "devDependencies": {
-    "@babel/cli": "^7.0.0",
-    "@babel/core": "^7.0.0",
+    "@babel/cli": "^7.12.8",
+    "@babel/core": "^7.12.8",
     "@babel/preset-env": "^7.9.0",
-    "eslint": "^6.8.0",
+    "eslint": "^7.14.0",
     "eslint-config-airbnb-base": "^14.1.0",
     "eslint-plugin-compat": "^3.5.1",
     "eslint-plugin-import": "^2.20.2",
     "install": "^0.13.0",
-    "jest": "^25.3.0",
     "npm": "^6.14.4",
-    "webpack": "^4.42.1",
-    "webpack-bundle-analyzer": "^3.6.1",
-    "webpack-cli": "^3.3.11"
+    "webpack": "^5.6.0",
+    "webpack-cli": "^4.2.0"
   },
   "dependencies": {
     "aggregation": "^1.2.6",
     "core-js": "^3.6.4"
-  },
-  "jest": {
-    "testPathIgnorePatterns": [
-      "/node_modules/"
-    ]
   }
 }
