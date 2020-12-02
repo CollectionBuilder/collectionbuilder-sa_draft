@@ -25,7 +25,11 @@
     "extends": [
       "@open-wc/eslint-config",
       "eslint-config-prettier"
-    ]
+    ],
+    "rules": {
+      "wc/no-self-class": 1,
+      "wc/no-constructor-attributes": 1
+    }
   },
   "prettier": {
     "singleQuote": true,
