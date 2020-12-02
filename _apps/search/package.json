@@ -1,118 +1,46 @@
 {
-  "name": "collectionbuilder-search",
-  "version": "1.0.0",
-  "description": "",
-  "private": true,
-  "browserslist": {
-    "modern": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version",
-      "last 1 ios version",
-      "last 1 edge version"
-    ],
-    "legacy": [
-      "defaults",
-      "IE >= 10"
-    ]
+  "scripts": {
+    "lint:eslint": "eslint --ext .js,.html . --ignore-path .gitignore",
+    "format:eslint": "eslint --ext .js,.html . --fix --ignore-path .gitignore",
+    "lint:prettier": "prettier \"**/*.js\" --check --ignore-path .gitignore",
+    "format:prettier": "prettier \"**/*.js\" --write --ignore-path .gitignore",
+    "lint": "npm run lint:eslint && npm run lint:prettier",
+    "format": "npm run format:eslint && npm run format:prettier",
+    "build": "rimraf dist && rollup -c rollup.config.js",
+    "start:build": "npm run build && web-dev-server --root-dir dist --app-index index.html --open --compatibility none"
   },
-  "babel": {
-    "presets": [
-      [
-        "@babel/preset-env",
-        {
-          "useBuiltIns": "usage",
-          "corejs": "3.6.4"
-        }
-      ]
-    ]
+  "devDependencies": {
+    "eslint": "^6.1.0",
+    "@open-wc/eslint-config": "^4.0.0",
+    "prettier": "^2.0.4",
+    "eslint-config-prettier": "^6.11.0",
+    "husky": "^1.0.0",
+    "lint-staged": "^10.0.0",
+    "@open-wc/building-rollup": "^1.0.0",
+    "deepmerge": "^4.2.2",
+    "rimraf": "^2.6.3",
+    "rollup": "^2.3.4"
   },
   "eslintConfig": {
-    "env": {
-      "browser": true
-    },
     "extends": [
-      "eslint:recommended",
-      "airbnb-base"
-    ],
-    "parserOptions": {
-      "ecmaVersion": 9,
-      "sourceType": "module"
-    },
-    "plugins": [
-      "compat"
-    ],
-    "rules": {
-      "compat/compat": "warn",
-      "array-bracket-spacing": [
-        "error",
-        "always"
-      ],
-      "arrow-parens": [
-        "error",
-        "as-needed"
-      ],
-      "comma-dangle": [
-        "warn",
-        "always-multiline"
-      ],
-      "import/extensions": 0,
-      "no-confusing-arrow": 0,
-      "no-console": [
-        "error",
-        {
-          "allow": [
-            "error",
-            "warn"
-          ]
-        }
-      ],
-      "no-void": 0,
-      "quotes": 0,
-      "semi": 0,
-      "space-before-function-paren": [
-        "error",
-        "always"
-      ],
-      "no-underscore-dangle": 0,
-      "implicit-arrow-linebreak": 0
+      "@open-wc/eslint-config",
+      "eslint-config-prettier"
+    ]
+  },
+  "prettier": {
+    "singleQuote": true,
+    "arrowParens": "avoid"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
     }
   },
-  "scripts": {
-    "dev": "npx serve",
-    "build:dev": "npm run lint:js && npm run build:js && npm run copy",
-    "build:js": "babel src -d build",
-    "build:legacy": "export BROWSERSLIST_ENV=legacy && npm run lint:js && npm run build:js && npm run build:webpack && npm run copy",
-    "build:modern": "export BROWSERSLIST_ENV=modern && npm run lint:js && npm run build:js && npm run build:webpack && npm run copy",
-    "build:webpack": "npx webpack --mode=production",
-    "copy": "cp build/dist/*.js ../../assets/js/",
-    "lint:js": "eslint src/*/*.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/CollectionBuilder/collectionbuilder-sa_draft"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/CollectionBuilder/collectionbuilder-sa_draft/issues"
-  },
-  "homepage": "https://collectionbuilder.github.io",
-  "devDependencies": {
-    "@babel/cli": "^7.12.8",
-    "@babel/core": "^7.12.8",
-    "@babel/preset-env": "^7.9.0",
-    "eslint": "^7.14.0",
-    "eslint-config-airbnb-base": "^14.1.0",
-    "eslint-plugin-compat": "^3.5.1",
-    "eslint-plugin-import": "^2.20.2",
-    "install": "^0.13.0",
-    "npm": "^6.14.4",
-    "serve": "^11.3.2",
-    "webpack": "^5.6.0",
-    "webpack-cli": "^4.2.0"
-  },
-  "dependencies": {
-    "core-js": "^3.6.4"
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
   }
 }
