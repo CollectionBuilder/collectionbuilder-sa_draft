@@ -1,19 +1,17 @@
-
 import "./SearchFacetValues.js"
 import "./SearchFacetValue.js"
 
 import SearchFacet from "./SearchFacet.js"
 
-import { createElement } from "../helpers.js"
+import { createElement } from "../lib/helpers.js"
 
-
-/******************************************************************************
-* Mult-Collection CTA Facet Component
-*
-* This component subclasses SearchFacet to create a call-to-action for
-* multi-collection search.
-*
-******************************************************************************/
+/*
+ * Mult-Collection CTA Facet Component
+ *
+ * This component subclasses SearchFacet to create a call-to-action for
+ * multi-collection search.
+ *
+ */
 
 export default class MultiCollectionCTAFacet extends SearchFacet {
   constructor (numAdditionalCollections) {
@@ -40,7 +38,7 @@ export default class MultiCollectionCTAFacet extends SearchFacet {
     // search page.
     this.valueClickHandler = e => {
       e.stopPropagation()
-      location.pathname = `/multi-collection-search/`
+      window.location.pathname = `/multi-collection-search/`
     }
 
     this.appendChild(searchFacetValues)

@@ -1,3 +1,6 @@
+/*
+ * The Main Search App Component
+ */
 
 import "./ClearFilters.js"
 
@@ -10,17 +13,16 @@ import {
   buildQuery,
   executeQuery,
   getIndicesDirectory,
-} from "../elasticsearch.js"
+} from "../lib/elasticsearch.js"
 
 import {
   createElement,
   getUrlSearchParams,
   removeChildren,
   updateUrlSearchParams,
-} from "../helpers.js"
+} from "../lib/helpers.js"
 
-
-export class Search extends HTMLElement {
+export default class Search extends HTMLElement {
   constructor () {
     super()
 
@@ -69,7 +71,6 @@ export class Search extends HTMLElement {
     if (searchParams.has("q")) {
       this.searchInput.value = searchParams.get("q")
     }
-
   }
 
   async connectedCallback () {
@@ -79,13 +80,17 @@ export class Search extends HTMLElement {
       // Use the origin property value which discards trailing slashes.
       this.esUrl = new URL(elasticsearchUrl).origin
     } catch (e) {
-      throw 'Please specify a valid <es-search> element "elasticsearch-url" value'
+      throw new Error(
+        'Please specify a valid <es-search> element "elasticsearch-url" value'
+      )
     }
 
     // Read the Elasticsearch index property.
     this.esIndex = this.getAttribute("elasticsearch-index")
     if (!this.esIndex) {
-      throw 'Please specify a valid <es-search> element "elasticsearch-index" value'
+      throw new Error(
+        'Please specify a valid <es-search> element "elasticsearch-index" value'
+      )
     }
 
     // Parse the list of all fields.
@@ -125,18 +130,25 @@ export class Search extends HTMLElement {
     this.isMulti = this.hasAttribute("search-multi")
 
     // Get the indices directory data and use it to init the title/index maps.
-    for (const { index, title } of (await getIndicesDirectory(this.esUrl))) {
+    const indicesDirectory = await getIndicesDirectory(this.esUrl)
+    indicesDirectory.forEach(({ index, title }) => {
       this.indicesDirectoryIndexTitleMap.set(index, title)
       this.indicesDirectoryTitleIndexMap.set(title, index)
-    }
+    })
 
     // Register the search input keydown handler.
-    this.searchInput
-        .addEventListener("keydown", this.searchInputKeydownHandler.bind(this))
+    this.searchInput.addEventListener(
+      "keydown", this.searchInputKeydownHandler.bind(this)
+    )
 
     // Register the clear filters button click handler.
-    this.clearFiltersButton
-      .addEventListener("click", this.clearFiltersClickHandler.bind(this))
+    this.clearFiltersButton.addEventListener(
+      "click", this.clearFiltersClickHandler.bind(this)
+    )
+
+    // Execute a new search on popstate event to handle the
+    // browser back button.
+    window.addEventListener("popstate", () => this.search.bind(this)())
 
     // Execute the initial search.
     this.search()
@@ -181,11 +193,11 @@ export class Search extends HTMLElement {
     const q = searchParams.pop("q") || ""
 
     // Get any paging values.
-    const start = parseInt(searchParams.pop("start") || 0)
-    const size = parseInt(searchParams.pop("size") || 10)
+    const start = parseInt(searchParams.pop("start") || 0, 10)
+    const size = parseInt(searchParams.pop("size") || 10, 10)
 
     // Get any list of fields on which to search.
-    let fields = ["*"]
+    let fields = [ "*" ]
     if (searchParams.has("fields")) {
       fields = searchParams.pop("fields").split(",")
     }
@@ -198,23 +210,24 @@ export class Search extends HTMLElement {
     }
 
     // Use the remaining searchParams entries to build the filters list.
-    let filters = new Map()
-    for (let [ k, v ] of searchParams.entries()) {
+    const filters = new Map()
+    Array.from(searchParams.entries()).forEach(([ k, v ]) => {
       const isArray = k.endsWith("[]")
-      let name = `${isArray ? k.slice(0, k.length - 2) : k}.raw`
-      let values = isArray ? v : [v]
+      const name = `${isArray ? k.slice(0, k.length - 2) : k}.raw`
+      const values = isArray ? v : [ v ]
       filters.set(name, values)
       numAppliedFilters += values.length
-    }
+    })
 
     // Define the aggregations.
-    let aggregationNameFieldMap = new Map()
-    for (const name of this.facetedFields) {
-      aggregationNameFieldMap.set(name, `${name}.raw`)
-    }
+    const aggregationNameFieldMap = new Map()
+    this.facetedFields.forEach(
+      name => aggregationNameFieldMap.set(name, `${name}.raw`)
+    )
 
-    const searchQuery = buildQuery(indices, { q, filters, start, size, fields,
-                                              aggregationNameFieldMap, _source })
+    const searchQuery = buildQuery(indices, {
+      q, filters, start, size, fields, aggregationNameFieldMap, _source
+    })
 
     const allIndices = Array.from(this.indicesDirectoryIndexTitleMap.keys())
 
@@ -242,11 +255,14 @@ export class Search extends HTMLElement {
     const collectionAgg = countResponse.aggregations.collection
     // Add zero-count buckets for any unrepresented indices.
     const representedIndices = collectionAgg.buckets.map(({ key }) => key)
-    for (const indice of allIndices.filter(x => !representedIndices.includes(x))) {
-      collectionAgg.buckets.push({ key: indice, doc_count: 0 })
-    }
+    allIndices
+      .filter(x => !representedIndices.includes(x))
+      .forEach(
+        indice => collectionAgg.buckets.push({ key: indice, doc_count: 0 })
+      )
     // Swap the indice names with their titles.
-    for (const bucket of collectionAgg.buckets) {
+    for (let i = 0; i < collectionAgg.buckets.length; i += 1) {
+      const bucket = collectionAgg.buckets[i]
       bucket.key = this.indicesDirectoryIndexTitleMap.get(bucket.key)
     }
     searchResponse.aggregations.collection = collectionAgg
@@ -313,7 +329,6 @@ export class Search extends HTMLElement {
       const multiCtaFacet = new MultiCollectionCTAFacet(numAdditionalCollections)
       searchFacets.insertBefore(multiCtaFacet, searchFacets.children[0])
     }
-
   }
 
   async renderResultsHeader (numHits, start, size) {
@@ -324,13 +339,16 @@ export class Search extends HTMLElement {
     const searchResultsHeader = new SearchResultsHeader(numHits, start, size)
     container.appendChild(searchResultsHeader)
 
-    // Register the page size selector change handler.
-    searchResultsHeader.querySelector("select[is=page-size-selector]")
-    .addEventListener("change", this.pageSizeSelectorChangeHandler.bind(this))
+    if (numHits > 0) {
+      // Register the page size selector change handler.
+      searchResultsHeader
+        .querySelector("select[is=page-size-selector]")
+        .addEventListener("change", this.pageSizeSelectorChangeHandler.bind(this))
 
-    // Register the paginator click handler.
-    searchResultsHeader.querySelector("paginator-control")
+      // Register the paginator click handler.
+      searchResultsHeader.querySelector("paginator-control")
         .addEventListener("click", this.paginatorClickHandler.bind(this))
+    }
   }
 
   async renderResults (hits) {
@@ -354,7 +372,7 @@ export class Search extends HTMLElement {
     /* Handle a facet value click by updating the URL search params and initiating
        a new search.
     */
-    const params = new URLSearchParams(location.search)
+    const params = new URLSearchParams(window.location.search)
     const paramKey = `${name}[]`
     let paramVals = params.getAll(paramKey)
 
@@ -385,10 +403,13 @@ export class Search extends HTMLElement {
     el.blur()
     // Update the URL 'q' search param.
     const q = el.value
-    const params = new URLSearchParams(location.search)
+    const params = new URLSearchParams(window.location.search)
     params.set("q", q)
-    updateUrlSearchParams(params)
 
+    // Delete any start param.
+    params.delete("start")
+
+    updateUrlSearchParams(params)
     this.search()
   }
 
@@ -397,8 +418,12 @@ export class Search extends HTMLElement {
     */
     // Update the URL 'q' search param.
     const size = e.target.value
-    const params = new URLSearchParams(location.search)
+    const params = new URLSearchParams(window.location.search)
     params.set("size", size)
+
+    // Delete any start param.
+    params.delete("start")
+
     updateUrlSearchParams(params)
     this.search()
   }
@@ -409,13 +434,11 @@ export class Search extends HTMLElement {
     e.stopPropagation()
 
     // Parse the unique list of applied filter keys from the current URL.
-    const params = new URLSearchParams(location.search)
+    const params = new URLSearchParams(window.location.search)
     const filterKeys = new Set(Array.from(params.keys()).filter(x => x.endsWith("[]")))
 
     // Delete all filter params.
-    for (const k of filterKeys) {
-      params.delete(k)
-    }
+    filterKeys.forEach(k => params.delete(k))
 
     // Also delete start if present.
     params.delete("start")
@@ -431,16 +454,16 @@ export class Search extends HTMLElement {
     /* Handler a click on a paginator button.
     */
     e.stopPropagation()
-    const target = e.target
+    const { target } = e
     if (target.tagName !== "BUTTON") {
       return
     }
 
     // Get the page button's start attribute.
-    const start = target.start
+    const { start } = target
 
     // Add or update the URL search param start value.
-    const params = new URLSearchParams(location.search)
+    const params = new URLSearchParams(window.location.search)
     if (start === 0) {
       params.delete("start")
     } else {

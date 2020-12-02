@@ -1,13 +1,11 @@
+/*
+ * Search Facet Values Component
+ *
+ * This component is used to contain a list of <search-facet-value> elements.
+ *
+ */
 
-import { createElement } from "../helpers.js"
-
-
-/******************************************************************************
-* Search Facet Values Component
-*
-* This component is used to contain a list of <search-facet-value> elements.
-*
-******************************************************************************/
+import { createElement } from "../lib/helpers.js"
 
 export default class SearchFacetValues extends HTMLElement {
   constructor () {
@@ -40,15 +38,14 @@ export default class SearchFacetValues extends HTMLElement {
     // Read any specified initial-num-visible attribute.
     if (this.hasAttribute("initial-num-visible")) {
       this.defaultNumVisible = parseInt(
-        this.getAttribute("initial-num-visible")
+        this.getAttribute("initial-num-visible"), 10
       )
     }
 
     // Collect the slice of <search-facet-value> elements whose visibility we
     // need to control.
-    this.valueElsSlice =
-      Array.from(this.querySelectorAll("search-facet-value"))
-           .slice(this.defaultNumVisible)
+    this.valueElsSlice = Array.from(this.querySelectorAll("search-facet-value"))
+      .slice(this.defaultNumVisible)
 
     // If the number of values doesn not exceed defaultNumVisible, hide the
     // show more button.
@@ -63,8 +60,9 @@ export default class SearchFacetValues extends HTMLElement {
 
   showAllChangeHandler () {
     // Set the .show-more element's text content.
-    this.querySelector(".show-more").textContent =
-      this.showAll ? "show fewer" : "show more"
+    this
+      .querySelector(".show-more")
+      .textContent = this.showAll ? "show fewer" : "show more"
 
     // Show/hide the value elements in the non-default slice.
     const classToAdd = this.showAll ? "d-flex" : "d-none"

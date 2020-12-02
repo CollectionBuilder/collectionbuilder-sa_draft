@@ -1,13 +1,11 @@
+import { createElement } from "../lib/helpers.js"
 
-import { createElement } from "../helpers.js"
-
-
-/******************************************************************************
-* Search Facet Component
-*
-* This component is used to implement a single facet.
-*
-******************************************************************************/
+/*
+ * Search Facet Component
+ *
+ * This component is used to implement a single facet.
+ *
+ */
 
 export default class SearchFacet extends HTMLElement {
   constructor () {
@@ -78,8 +76,9 @@ export default class SearchFacet extends HTMLElement {
     this.collapsed = !this.collapsed
 
     // Update the collapsed icon.
-    this.querySelector('h1 > span.collapsed-icon').textContent =
-      this.collapsed ? "+" : "-"
+    this
+      .querySelector('h1 > span.collapsed-icon')
+      .textContent = this.collapsed ? "+" : "-"
 
     // Update the search facet values display.
     // Note the assumption that both search-facet-values element has a default
@@ -103,7 +102,7 @@ export default class SearchFacet extends HTMLElement {
   removeValueClickListener (fn) {
     /* Remove a function from the value click listeners array.
      */
-    for (const i in this.valueClickListeners) {
+    for (let i = 0; i < this.valueClickListeners.length; i += 1) {
       if (this.valueClickListeners[i] === fn) {
         // Remove the function from the listeners array and return.
         this.valueClickListeners.splice(i, 1)
@@ -115,15 +114,15 @@ export default class SearchFacet extends HTMLElement {
   valueClickHandler (e) {
     /* Invoke all registered value click listeners.
      */
-    let target = e.target.closest("search-facet-value")
+    const target = e.target.closest("search-facet-value")
     // Ignore clicks not inside a <search-facet-value>.
     if (target === null) {
       return
     }
     const value = target.getAttribute("value")
-    for (let fn of this.valueClickListeners) {
-      fn(this.name, value)
-    }
+    this.valueClickListeners.forEach(
+      fn => fn(this.name, value)
+    )
   }
 }
 

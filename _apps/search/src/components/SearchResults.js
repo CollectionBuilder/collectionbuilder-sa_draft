@@ -1,6 +1,4 @@
-
 import SearchResult from "./SearchResult.js"
-
 
 export default class SearchResults extends HTMLElement {
   constructor (hits, displayFields, isMulti) {
@@ -12,11 +10,11 @@ export default class SearchResults extends HTMLElement {
   }
 
   connectedCallback () {
-    for (const hit of this.hits) {
+    this.hits.forEach(hit => {
       this.appendChild(
         new SearchResult(hit._source, this.displayFields, this.isMulti)
       )
-    }
+    })
   }
 }
 

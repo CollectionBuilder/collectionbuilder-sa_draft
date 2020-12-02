@@ -1,12 +1,11 @@
+/*
+ * Search Facet Value Component
+ *
+ * This component is used to implement a single facet value.
+ *
+ */
 
-/******************************************************************************
-* Search Facet Value Component
-*
-* This component is used to implement a single facet value.
-*
-******************************************************************************/
-
-export class SearchFacetValue extends HTMLElement {
+export default class SearchFacetValue extends HTMLElement {
   constructor () {
     super()
 
@@ -18,17 +17,18 @@ export class SearchFacetValue extends HTMLElement {
       "btn",
       "btn-light",
       "border-bottom",
-      "rounded-0"
+      "rounded-0",
     )
 
     // Add custom component classes.
     this.classList.add("cursor-pointer")
 
     // Define the component's inner structure.
-    this.innerHTML =
+    this.innerHTML = (
       `<span class="text-truncate pr-2 name"></span>
        <span class="ml-auto doc-count"></span>
       `
+    )
   }
 
   connectedCallback () {
