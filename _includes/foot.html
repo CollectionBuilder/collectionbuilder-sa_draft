@@ -15,5 +15,7 @@
 {% if page.layout == "search" or page.layout == "multi-collection-search" %}
   {% if site.elasticsearch-host == "" %}
     {% include js/lunr-js.html %}
-  {% endif %}
+  {% else %}
+    <script src="/assets/js/apps/search/d46d2072.js"></script>
+  {%- endif -%}
 {% endif %}
