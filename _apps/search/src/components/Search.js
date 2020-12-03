@@ -6,6 +6,7 @@ import "./ClearFilters.js"
 
 import MultiCollectionCTAFacet from "./MultiCollectionCTAFacet.js"
 import SearchFacets from "./SearchFacets.js"
+import MobileSearchFacets from "./MobileSearchFacets.js"
 import SearchResultsHeader from "./SearchResultsHeader.js"
 import SearchResults from "./SearchResults.js"
 
@@ -45,9 +46,10 @@ export default class Search extends HTMLElement {
         </div>
 
         <div class="row">
-          <div class="col-4 facets"></div>
+          <div class="col-4 d-none d-lg-block" id="search-facets"></div>
           <div class="col">
             <input type="text" class="form-control mb-2" placeholder="Search" aria-label="search box">
+            <div id="mobile-search-facets" class="d-lg-none"></div>
             <clear-filters num-applied="0"></clear-filters>
             <div class="results-header"></div>
             <div class="results"></div>
@@ -55,7 +57,8 @@ export default class Search extends HTMLElement {
         </div>
       </div>
       `
-    ))
+      )
+    )
 
     // Extricate the overlay element from the DOM so that we can inject it as necessary.
     this.searchOverlay = this.querySelector("#search-overlay")
@@ -138,12 +141,14 @@ export default class Search extends HTMLElement {
 
     // Register the search input keydown handler.
     this.searchInput.addEventListener(
-      "keydown", this.searchInputKeydownHandler.bind(this)
+      "keydown",
+      this.searchInputKeydownHandler.bind(this)
     )
 
     // Register the clear filters button click handler.
     this.clearFiltersButton.addEventListener(
-      "click", this.clearFiltersClickHandler.bind(this)
+      "click",
+      this.clearFiltersClickHandler.bind(this)
     )
 
     // Execute a new search on popstate event to handle the
@@ -187,7 +192,9 @@ export default class Search extends HTMLElement {
         numAppliedFilters += indiceTitles.length
       }
     }
-    const indices = indiceTitles.map(x => this.indicesDirectoryTitleIndexMap.get(x))
+    const indices = indiceTitles.map(x =>
+      this.indicesDirectoryTitleIndexMap.get(x)
+    )
 
     // Get any query string.
     const q = searchParams.pop("q") || ""
@@ -206,7 +213,7 @@ export default class Search extends HTMLElement {
     const _source = {
       excludes: [
         "full_text"
-      ]
+      ],
     }
 
     // Use the remaining searchParams entries to build the filters list.
@@ -221,12 +228,18 @@ export default class Search extends HTMLElement {
 
     // Define the aggregations.
     const aggregationNameFieldMap = new Map()
-    this.facetedFields.forEach(
-      name => aggregationNameFieldMap.set(name, `${name}.raw`)
+    this.facetedFields.forEach(name =>
+      aggregationNameFieldMap.set(name, `${name}.raw`)
     )
 
     const searchQuery = buildQuery(indices, {
-      q, filters, start, size, fields, aggregationNameFieldMap, _source
+      q,
+      filters,
+      start,
+      size,
+      fields,
+      aggregationNameFieldMap,
+      _source,
     })
 
     const allIndices = Array.from(this.indicesDirectoryIndexTitleMap.keys())
@@ -240,10 +253,10 @@ export default class Search extends HTMLElement {
         collection: {
           terms: {
             field: "_index",
-            size: allIndices.length
-          }
-        }
-      }
+            size: allIndices.length,
+          },
+        },
+      },
     }
 
     const [ searchResponse, countResponse ] = await Promise.all([
@@ -257,8 +270,8 @@ export default class Search extends HTMLElement {
     const representedIndices = collectionAgg.buckets.map(({ key }) => key)
     allIndices
       .filter(x => !representedIndices.includes(x))
-      .forEach(
-        indice => collectionAgg.buckets.push({ key: indice, doc_count: 0 })
+      .forEach(indice =>
+        collectionAgg.buckets.push({ key: indice, doc_count: 0 })
       )
     // Swap the indice names with their titles.
     for (let i = 0; i < collectionAgg.buckets.length; i += 1) {
@@ -285,26 +298,19 @@ export default class Search extends HTMLElement {
 
   showOverlay () {
     /* Show the search spinner overlay.
-    */
+     */
     this.querySelector(".container").appendChild(this.searchOverlay)
   }
 
   hideOverlay () {
     /* Hide the search spinner overlay.
-    */
+     */
     this.searchOverlay.remove()
   }
 
   async renderFacets (aggregations) {
     /* Reinstantiate the SearchFacets component with the specified aggregations.
      */
-    // Get the facets container element and remove any existing <search-facets> element.
-    const searchFacetsContainerEl = this.querySelector("div.facets")
-    let searchFacets = searchFacetsContainerEl.querySelector("search-facets")
-    if (searchFacets !== null) {
-      searchFacets.remove()
-    }
-
     // Get the ordered array of facet names.
     let includeKeys = this.facetedFields
 
@@ -313,22 +319,49 @@ export default class Search extends HTMLElement {
       includeKeys = [ "collection" ].concat(includeKeys)
     }
 
+    /* Render the desktop search facets */
+    // Get the desktop container element.
+    const searchFacetsContainerEl = this.querySelector("#search-facets")
+    const mobileSearchFacetsContainerEl = this.querySelector(
+      "#mobile-search-facets"
+    )
+
+    // Remove any existing children.
+    removeChildren(searchFacetsContainerEl)
+    removeChildren(mobileSearchFacetsContainerEl)
+
     // Instantiate the SearchFacets component.
-    searchFacets = new SearchFacets(aggregations, includeKeys)
-
-    // Register the facet value click handler.
-    searchFacets.addValueClickListener(this.facetValueClickHandler.bind(this))
-
-    // Append the component to the container.
-    searchFacetsContainerEl.appendChild(searchFacets)
+    const searchFacets = new SearchFacets(aggregations, includeKeys)
+    const mobileSearchFacets = new SearchFacets(aggregations, includeKeys)
 
     // If this is not the multisearch page, include a multi-search call-to-action
     // as the first facet.
     if (!this.isMulti) {
-      const numAdditionalCollections = this.indicesDirectoryIndexTitleMap.size - 1
-      const multiCtaFacet = new MultiCollectionCTAFacet(numAdditionalCollections)
-      searchFacets.insertBefore(multiCtaFacet, searchFacets.children[0])
+      const numAdditionalCollections =
+        this.indicesDirectoryIndexTitleMap.size - 1
+      searchFacets.insertBefore(
+        new MultiCollectionCTAFacet(numAdditionalCollections),
+        searchFacets.children[0]
+      )
+      mobileSearchFacets.insertBefore(
+        new MultiCollectionCTAFacet(numAdditionalCollections),
+        mobileSearchFacets.children[0]
+      )
     }
+
+    // Register the facet value click handler.
+    searchFacets.addValueClickListener(this.facetValueClickHandler.bind(this))
+    mobileSearchFacets.addValueClickListener(
+      this.facetValueClickHandler.bind(this)
+    )
+
+    // Append the new <search-facets> element.
+    searchFacetsContainerEl.appendChild(searchFacets)
+
+    // Create and append the search facets modal component.
+    mobileSearchFacetsContainerEl.appendChild(
+      new MobileSearchFacets(mobileSearchFacets)
+    )
   }
 
   async renderResultsHeader (numHits, start, size) {
@@ -343,10 +376,14 @@ export default class Search extends HTMLElement {
       // Register the page size selector change handler.
       searchResultsHeader
         .querySelector("select[is=page-size-selector]")
-        .addEventListener("change", this.pageSizeSelectorChangeHandler.bind(this))
+        .addEventListener(
+          "change",
+          this.pageSizeSelectorChangeHandler.bind(this)
+        )
 
       // Register the paginator click handler.
-      searchResultsHeader.querySelector("paginator-control")
+      searchResultsHeader
+        .querySelector("paginator-control")
         .addEventListener("click", this.paginatorClickHandler.bind(this))
     }
   }
@@ -356,7 +393,9 @@ export default class Search extends HTMLElement {
      */
     // Get the results container element and remove any existing <search-results> element.
     const searchResultsContainerEl = this.querySelector("div.results")
-    let searchResults = searchResultsContainerEl.querySelector("search-results")
+    let searchResults = searchResultsContainerEl.querySelector(
+      "search-results"
+    )
     if (searchResults !== null) {
       searchResults.remove()
     }
@@ -401,7 +440,7 @@ export default class Search extends HTMLElement {
     const el = e.target
     // Blur the input.
     el.blur()
-    // Update the URL 'q' search param.
+    // Update the URL "q" search param.
     const q = el.value
     const params = new URLSearchParams(window.location.search)
     params.set("q", q)
@@ -415,8 +454,8 @@ export default class Search extends HTMLElement {
 
   pageSizeSelectorChangeHandler (e) {
     /* Execute a new search when the page size selector is changed.
-    */
-    // Update the URL 'q' search param.
+     */
+    // Update the URL "q" search param.
     const size = e.target.value
     const params = new URLSearchParams(window.location.search)
     params.set("size", size)
@@ -430,12 +469,14 @@ export default class Search extends HTMLElement {
 
   clearFiltersClickHandler (e) {
     /* Handler a click on the clear-filters button.
-    */
+     */
     e.stopPropagation()
 
     // Parse the unique list of applied filter keys from the current URL.
     const params = new URLSearchParams(window.location.search)
-    const filterKeys = new Set(Array.from(params.keys()).filter(x => x.endsWith("[]")))
+    const filterKeys = new Set(
+      Array.from(params.keys()).filter(x => x.endsWith("[]"))
+    )
 
     // Delete all filter params.
     filterKeys.forEach(k => params.delete(k))
@@ -452,7 +493,7 @@ export default class Search extends HTMLElement {
 
   paginatorClickHandler (e) {
     /* Handler a click on a paginator button.
-    */
+     */
     e.stopPropagation()
     const { target } = e
     if (target.tagName !== "BUTTON") {
