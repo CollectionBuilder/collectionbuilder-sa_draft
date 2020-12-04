@@ -20,6 +20,12 @@ export default class SearchFacet extends HTMLElement {
     // Define properties that will be populated within connectedCallback.
     this.name = undefined
     this.displayName = undefined
+  }
+
+  connectedCallback () {
+    // Read the custom element attributes.
+    this.name = this.getAttribute("name")
+    this.displayName = this.getAttribute("display-name")
 
     // Add component styles.
     this.classList.add(
@@ -41,18 +47,9 @@ export default class SearchFacet extends HTMLElement {
        </h1>`
     ))
 
-    this.appendChild(createElement(`<slot></slot>`))
-  }
-
-  connectedCallback () {
-    // Read the custom element attributes.
-    this.name = this.getAttribute("name")
-    this.displayName = this.getAttribute("display-name")
-
-    // Insert the <search-facet-values> element into its slot.
-    // Note that this would happen automatically if we were using a shadow DOM.
     const searchFacetValuesEl = this.querySelector("search-facet-values")
-    this.querySelector("slot").replaceWith(searchFacetValuesEl)
+    searchFacetValuesEl.remove()
+    this.appendChild(searchFacetValuesEl)
 
     // If collapsed was specified, collapse the values.
     if (this.hasAttribute("collapsed")) {

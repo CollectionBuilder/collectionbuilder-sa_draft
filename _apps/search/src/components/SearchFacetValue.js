@@ -9,13 +9,26 @@ export default class SearchFacetValue extends HTMLElement {
   constructor () {
     super()
 
+    this.connectCount = 1
+  }
+
+  connectedCallback () {
+    if (this.connectCount > 1) {
+      return
+    }
+    this.connectCount += 1
+
+    // Read the custom element attributes.
+    const name = this.getAttribute("value")
+    const docCount = this.getAttribute("doc-count")
+    const selected = this.hasAttribute("selected")
+
     // Add Bootstrap component classes.
     this.classList.add(
-      "d-flex",
       "py-1",
       "px-2",
       "btn",
-      "btn-light",
+      selected ? "btn-info" : "btn-light",
       "border-bottom",
       "rounded-0",
     )
@@ -25,32 +38,10 @@ export default class SearchFacetValue extends HTMLElement {
 
     // Define the component's inner structure.
     this.innerHTML = (
-      `<span class="text-truncate pr-2 name"></span>
-       <span class="ml-auto doc-count"></span>
+      `<span class="text-truncate pr-2 name" title="${name}">${name}</span>
+       <span class="ml-auto doc-count">${selected ? "x" : docCount}</span>
       `
     )
-  }
-
-  connectedCallback () {
-    // Read the custom element attributes.
-    const name = this.getAttribute("value")
-    const docCount = this.getAttribute("doc-count")
-    const selected = this.hasAttribute("selected")
-
-    // Update the name element.
-    const nameEl = this.querySelector(".name")
-    nameEl.textContent = name
-    // Set the title attribute to show untruncated value on hover.
-    nameEl.setAttribute("title", name)
-
-    // Update the doc-count element.
-    this.querySelector(".doc-count").textContent = selected ? "x" : docCount
-
-    // If selected, replace the btn-light class with btn-info.
-    if (selected) {
-      this.classList.remove("btn-light")
-      this.classList.add("btn-info")
-    }
   }
 }
 

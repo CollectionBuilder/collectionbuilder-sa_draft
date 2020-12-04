@@ -3,8 +3,6 @@ import "./SearchFacetValue.js"
 
 import SearchFacet from "./SearchFacet.js"
 
-import { createElement } from "../lib/helpers.js"
-
 /*
  * Mult-Collection CTA Facet Component
  *
@@ -16,21 +14,27 @@ import { createElement } from "../lib/helpers.js"
 export default class MultiCollectionCTAFacet extends SearchFacet {
   constructor (numAdditionalCollections) {
     super()
+    this.numAdditionalCollections = numAdditionalCollections
+  }
 
-    // Set the collapsed attribute.
-    this.setAttribute("collapsed", "")
-
-    const searchFacetValues = createElement(
+  connectedCallback () {
+    this.innerHTML = (
       `<search-facet-values>
         <search-facet-value
-           value="Go to the multi-collection search page to access ${numAdditionalCollections} additional collections"
+           value="Go to the multi-collection search page to access ${this.numAdditionalCollections} additional collections"
            doc-count="">
         </search-facet-value>
       </search-facet-values>`
     )
 
+    this.setAttribute("name", "other-collections")
+    this.setAttribute("display-name", "Other Collections")
+    this.setAttribute("collapsed", "")
+
+    super.connectedCallback()
+
     // Remove the text-truncate class from the name.
-    searchFacetValues
+    this
       .querySelector("search-facet-value .name")
       .classList.remove("text-truncate")
 
@@ -41,14 +45,6 @@ export default class MultiCollectionCTAFacet extends SearchFacet {
       window.location.pathname = `/multi-collection-search/`
     }
 
-    this.appendChild(searchFacetValues)
-  }
-
-  connectedCallback () {
-    this.setAttribute("name", "other-collections")
-    this.setAttribute("display-name", "Other Collections")
-
-    super.connectedCallback()
   }
 }
 

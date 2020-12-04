@@ -9,6 +9,10 @@ export default class MobileSearchFacets extends HTMLElement {
   constructor (searchFacets) {
     super()
 
+    this.searchFacets = searchFacets
+  }
+
+  connectedCallback () {
     // Define this element's inner structure.
     this.innerHTML = `<button class="btn btn-secondary mb-2 w-100">Show Filters</button>
        <div class="outer d-none position-fixed"
@@ -24,7 +28,7 @@ export default class MobileSearchFacets extends HTMLElement {
     this.innerEl = this.querySelector(".inner")
 
     // Append the searchFacets element as a child of the inner div.
-    this.innerEl.appendChild(searchFacets)
+    this.innerEl.appendChild(this.searchFacets)
 
     // Register a click handler on the button that will show the modal.
     this.querySelector("button").addEventListener(

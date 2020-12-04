@@ -6,9 +6,7 @@
  */
 
 export default class ClearFilters extends HTMLElement {
-  constructor () {
-    super()
-
+  connectedCallback () {
     // Set the Bootstrap component classes.
     this.classList.add(
       "btn",
@@ -19,9 +17,7 @@ export default class ClearFilters extends HTMLElement {
 
     // Add custom component classes.
     this.classList.add("cursor-pointer")
-  }
 
-  connectedCallback () {
     // Manually invoke the attributeChangedCallback with the initial num-applied
     // property value to set the initial component state.
     this.attributeChangedCallback(

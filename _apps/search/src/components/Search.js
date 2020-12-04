@@ -29,51 +29,6 @@ export default class Search extends HTMLElement {
 
     this.indicesDirectoryIndexTitleMap = new Map()
     this.indicesDirectoryTitleIndexMap = new Map()
-
-    // Set component styles.
-    this.style.fontSize = "1rem"
-
-    // Define the component's inner structure.
-    this.appendChild(createElement(
-      `
-      <div class="container position-relative">
-
-        <div id="search-overlay" class="position-absolute w-100 h-100 d-flex"
-             style="top: 0; background-color: rgba(255, 255, 255, 0.5);">
-          <div class="spinner-border ml-auto mr-auto" role="status">
-            <span class="sr-only">Loading...</span>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-4 d-none d-lg-block" id="search-facets"></div>
-          <div class="col">
-            <input type="text" class="form-control mb-2" placeholder="Search" aria-label="search box">
-            <div id="mobile-search-facets" class="d-lg-none"></div>
-            <clear-filters num-applied="0"></clear-filters>
-            <div class="results-header"></div>
-            <div class="results"></div>
-          </div>
-        </div>
-      </div>
-      `
-      )
-    )
-
-    // Extricate the overlay element from the DOM so that we can inject it as necessary.
-    this.searchOverlay = this.querySelector("#search-overlay")
-    this.searchOverlay.remove()
-
-    // Get a reference to the clear filters button.
-    this.clearFiltersButton = this.querySelector("clear-filters")
-
-    // Get a reference to the search input and initialize it with the value from the
-    // URL search params.
-    this.searchInput = this.querySelector("input[type=text]")
-    const searchParams = getUrlSearchParams()
-    if (searchParams.has("q")) {
-      this.searchInput.value = searchParams.get("q")
-    }
   }
 
   async connectedCallback () {
@@ -138,6 +93,51 @@ export default class Search extends HTMLElement {
       this.indicesDirectoryIndexTitleMap.set(index, title)
       this.indicesDirectoryTitleIndexMap.set(title, index)
     })
+
+    // Set component styles.
+    this.style.fontSize = "1rem"
+
+    // Define the component's inner structure.
+    this.appendChild(createElement(
+      `
+      <div class="container position-relative">
+
+        <div id="search-overlay" class="position-absolute w-100 h-100 d-flex"
+             style="top: 0; background-color: rgba(255, 255, 255, 0.5);">
+          <div class="spinner-border ml-auto mr-auto" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 d-none d-lg-block" id="search-facets"></div>
+          <div class="col">
+            <input type="text" class="form-control mb-2" placeholder="Search" aria-label="search box">
+            <div id="mobile-search-facets" class="d-lg-none"></div>
+            <clear-filters num-applied="0"></clear-filters>
+            <div class="results-header"></div>
+            <div class="results"></div>
+          </div>
+        </div>
+      </div>
+      `
+      )
+    )
+
+    // Extricate the overlay element from the DOM so that we can inject it as necessary.
+    this.searchOverlay = this.querySelector("#search-overlay")
+    this.searchOverlay.remove()
+
+    // Get a reference to the clear filters button.
+    this.clearFiltersButton = this.querySelector("clear-filters")
+
+    // Get a reference to the search input and initialize it with the value from the
+    // URL search params.
+    this.searchInput = this.querySelector("input[type=text]")
+    const searchParams = getUrlSearchParams()
+    if (searchParams.has("q")) {
+      this.searchInput.value = searchParams.get("q")
+    }
 
     // Register the search input keydown handler.
     this.searchInput.addEventListener(

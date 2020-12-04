@@ -7,6 +7,14 @@ export default class SearchResult extends HTMLElement {
   constructor (doc, displayFields, isMulti) {
     super()
 
+    this.doc = doc
+    this.displayFields = displayFields
+    this.isMulti = isMulti
+  }
+
+  connectedCallback () {
+    const { doc, displayFields, isMulti } = this
+
     // Add the Bootstrap component classes.
     this.classList.add(
       "d-flex",

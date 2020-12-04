@@ -8,13 +8,9 @@
 import { createElement } from "../lib/helpers.js"
 
 export default class PageSizeSelector extends HTMLSelectElement {
-  constructor () {
-    super()
-
-    this.classList.add("bg-white")
-  }
-
   connectedCallback () {
+    this.classList.add("bg-white")
+
     const initialValue = this.getAttribute("value")
     const options = this.getAttribute("options").split(",")
 

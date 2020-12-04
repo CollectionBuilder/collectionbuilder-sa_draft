@@ -17,11 +17,11 @@ export default class SearchResultsHeader extends HTMLElement {
     this.size = size
     this.startIdx = start + 1
     this.endIdx = this.startIdx + Math.min(numHits - this.startIdx, size - 1)
-
-    this.classList.add("d-flex")
   }
 
   connectedCallback () {
+    this.classList.add("d-flex")
+
     // Display a no results found message if there are no results.
     if (this.numHits === 0) {
       this.innerHTML = (

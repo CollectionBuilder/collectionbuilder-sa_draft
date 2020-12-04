@@ -17,24 +17,10 @@ export default class SearchFacetValues extends HTMLElement {
     // Define a flag to indicate whether we should show all the values.
     this.showAll = false
 
-    // Set component classes.
-    this.classList.add("d-block")
-
-    // Create the show more button element.
-    this.showMoreEl = createElement(
-      `<button class="btn btn-info w-100 rounded-0 pt-1 pb-1 show-more">
-         show more
-       </button>`
-    )
-
-    // Register the show more click handler.
-    this.showMoreEl.addEventListener("click", this.toggleShowAll.bind(this))
-
-    // Append the show more button to the component.
-    this.appendChild(this.showMoreEl)
+    this.connectCount = 1
   }
 
-  connectedCallback () {
+  initialConnectCallback () {
     // Read any specified initial-num-visible attribute.
     if (this.hasAttribute("initial-num-visible")) {
       this.defaultNumVisible = parseInt(
@@ -42,20 +28,48 @@ export default class SearchFacetValues extends HTMLElement {
       )
     }
 
+    // Set component classes.
+    this.classList.add("d-block")
+
+    // Get all of the <search-facet-value> elements.
+    const valueEls = Array.from(this.querySelectorAll("search-facet-value"))
+    // Add the d-flex class to all default-visible values.
+    valueEls
+      .slice(0, this.defaultNumVisible)
+      .forEach(el => el.classList.add("d-flex"))
+
     // Collect the slice of <search-facet-value> elements whose visibility we
     // need to control.
-    this.valueElsSlice = Array.from(this.querySelectorAll("search-facet-value"))
-      .slice(this.defaultNumVisible)
+    this.valueElsSlice = valueEls.slice(this.defaultNumVisible)
+    // Add the d-none class to all default-hidden values.
+    this.valueElsSlice.forEach(el => el.classList.add("d-none"))
 
-    // If the number of values doesn not exceed defaultNumVisible, hide the
-    // show more button.
-    if (this.valueElsSlice.length === 0) {
-      this.showMoreEl.style.display = "none"
+    // If the number of values exceeds defaultNumVisible, add the show more/fewer
+    // button.
+    if (this.valueElsSlice.length > 0) {
+      // Create the show more button element.
+      this.showMoreEl = createElement(
+        `<button class="btn btn-info w-100 rounded-0 pt-1 pb-1 show-more">
+         show more
+       </button>`
+      )
+      // Append the show more button to the component.
+      this.appendChild(this.showMoreEl)
+      // Collapse the values.
+      this.showAll = false
+      this.showAllChangeHandler()
+      // Register the show more click handler.
+      this.showMoreEl.addEventListener("click", this.toggleShowAll.bind(this))
     }
+  }
 
-    // Call the showAll change handler to ensure that the visible state is in
-    // sync with the current this.showAll value.
-    this.showAllChangeHandler()
+  connectedCallback () {
+    // Invoke firstConnectCallback() on first connect and increment the
+    // connect count.
+    if (this.connectCount === 1) {
+      this.initialConnectCallback()
+    }
+    this.connectCount += 1
   }
 
   showAllChangeHandler () {
@@ -68,8 +82,8 @@ export default class SearchFacetValues extends HTMLElement {
     const classToAdd = this.showAll ? "d-flex" : "d-none"
     const classToRemove = !this.showAll ? "d-flex" : "d-none"
     this.valueElsSlice.forEach(el => {
-      el.classList.remove(classToRemove)
       el.classList.add(classToAdd)
+      el.classList.remove(classToRemove)
     })
   }
 

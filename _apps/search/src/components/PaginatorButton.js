@@ -12,11 +12,14 @@ export default class PaginatorButton extends HTMLButtonElement {
     this.innerHTML = html
     this.start = start
     this.disabled = disabled
+    this.isCurrent = isCurrent
+  }
 
+  connectedCallback () {
     // Add Bootstrap component classes.
     this.classList.add("mr-1", "btn")
 
-    if (isCurrent) {
+    if (this.isCurrent) {
       this.classList.add("btn-primary")
     } else {
       this.classList.add("btn-light", "border-secondary")
